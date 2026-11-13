@@ -1,0 +1,6 @@
+{
+  "meta_template": "laporan_pemilik_v1",
+  "kategori": "utility",
+  "params": ["sesi", "keputusan", "tenggat"],
+  "teks": "Laporan rapat {sesi} Karyawan AI siap: {keputusan} keputusan menunggu Anda dan {tenggat} tenggat dalam 7 hari. Balas pesan ini atau ketik laporan untuk menerima laporan lengkap."
+}

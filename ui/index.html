@@ -161,6 +161,9 @@
   .chat form { display: flex; gap: 8px; } .chat form textarea { flex: 1; min-height: 52px; max-height: 160px; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: var(--r); resize: vertical; }
   .saran { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; } .saran button { font-size: 13px; padding: 6px 10px; }
 
+  .pinbox { position: relative; } .pinbox input { width: 100%; padding-right: 42px; }
+  .mata { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); width: 34px; height: 34px; display: grid; place-items: center; background: none; border: 0; border-radius: 6px; color: var(--ink-3); cursor: pointer; padding: 0; margin: 0; }
+  .mata:hover { color: var(--ink); } .mata:focus-visible { outline: 2px solid var(--ink-3); outline-offset: 1px; }
   /* dialog + markdown */
   dialog { border: 1px solid var(--line-2); border-radius: 12px; padding: 0; width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 48px); box-shadow: 0 16px 48px rgba(20,23,31,.22); }
   dialog::backdrop { background: rgba(20,23,31,.38); }
@@ -191,7 +194,7 @@
   <label for="m-nama">Nama</label>
   <input id="m-nama" autocomplete="name" required>
   <label for="m-pin">PIN</label>
-  <input id="m-pin" type="password" autocomplete="current-password" required>
+  <div class="pinbox"><input id="m-pin" type="password" autocomplete="current-password" required><button class="mata" type="button" data-lihat="m-pin" aria-label="Tampilkan PIN" aria-pressed="false"></button></div>
   <button class="btn primary" type="submit">Masuk</button>
   <p class="hint">Sekali masuk, perangkat ini tetap masuk 30 hari. Nama diingat otomatis.</p>
   <div class="status" id="m-st" role="status"></div>
@@ -207,7 +210,7 @@
   </nav>
   <span class="tgl num" id="tgl"></span>
   <span class="mode" id="mode" hidden></span>
-  <div class="who"><span class="nm" id="nama"></span><button class="btn" id="keluar" type="button">Keluar</button></div>
+  <div class="who"><span class="nm" id="nama"></span><button class="btn" id="ubah-pin" type="button">Ubah PIN</button><button class="btn" id="keluar" type="button">Keluar</button></div>
 </header>
 
 <main class="view" id="v-keputusan">
@@ -339,6 +342,15 @@ const jamID = (s) => new Date(s).toLocaleString('id-ID', { day: 'numeric', month
 const unitTag = (u) => `<span class="unit ${esc(u)}">${esc(NAMA[u] || u)}</span>`;
 
 let data = null, pilih = null;
+// Ikon mata untuk menampilkan/menyembunyikan semua kolom PIN
+const ikonMata = (tutup) => `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>${tutup ? '<path d="M4 4l16 16"/>' : ''}</svg>`;
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-lihat]'); if (!b) return;
+  const i = document.getElementById(b.dataset.lihat), show = i.type === 'password';
+  i.type = show ? 'text' : 'password'; b.innerHTML = ikonMata(show); b.setAttribute('aria-pressed', show); b.setAttribute('aria-label', show ? 'Sembunyikan PIN' : 'Tampilkan PIN'); i.focus();
+});
+document.querySelectorAll('[data-lihat]').forEach((b) => (b.innerHTML = ikonMata(false)));
+const kolomPin = (id, label, attr = '') => `<label for="${id}">${label}</label><div class="pinbox"><input id="${id}" type="password" inputmode="numeric" ${attr} required><button class="mata" type="button" data-lihat="${id}" aria-label="Tampilkan PIN" aria-pressed="false">${ikonMata(false)}</button></div>`;
 
 async function api(path, body) {
   const opt = body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {};
@@ -661,6 +673,22 @@ function dlgAgen(a) {
   };
 }
 $('#tambah-agen').onclick = () => dlgAgen(null);
+
+$('#ubah-pin').onclick = () => {
+  const el = bukaDialog('Ubah PIN', `<form class="form" id="f-pin">
+    ${kolomPin('pin-lama', 'PIN sekarang', 'autocomplete="current-password"')}
+    ${kolomPin('pin-baru', 'PIN baru (6–12 angka)', 'autocomplete="new-password" pattern="\\d{6,12}" minlength="6" maxlength="12"')}
+    ${kolomPin('pin-ulang', 'Ulangi PIN baru', 'autocomplete="new-password"')}
+    <p class="hint">Hindari angka berurutan, berulang, atau tanggal lahir. Setelah diubah, perangkat lain otomatis keluar; perangkat ini tetap masuk. Lupa PIN: ganti DASHBOARD_PIN di Vercel lalu redeploy.</p>
+    <button class="btn primary" type="submit" style="margin-top:14px">Simpan PIN baru</button><div class="status" id="pin-st" role="status"></div></form>`);
+  el.querySelector('#f-pin').onsubmit = async (e) => {
+    e.preventDefault(); const st = el.querySelector('#pin-st'), baru = el.querySelector('#pin-baru').value;
+    if (baru !== el.querySelector('#pin-ulang').value) { st.className = 'status err'; st.textContent = 'PIN baru dan ulangannya tidak sama.'; return; }
+    st.className = 'status'; st.textContent = 'Menyimpan…';
+    try { await api('/api/pin', { lama: el.querySelector('#pin-lama').value, baru }); st.className = 'status ok'; st.textContent = 'PIN diubah. Perangkat lain perlu masuk ulang dengan PIN baru.'; e.target.reset(); setTimeout(() => dlg.close(), 1800); }
+    catch (err) { st.className = 'status err'; st.textContent = err.message; }
+  };
+};
 
 $('#f-proyek').onsubmit = async (e) => {
   e.preventDefault(); const st = $('#p-st'), b = e.target.querySelector('button'); b.disabled = true;

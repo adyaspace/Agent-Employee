@@ -217,6 +217,50 @@ t('rutinitas: menyimpan ulang agent tidak mengulang rutinitas hari ini', (await 
 t('cron tanpa rahasia ditolak', (await fetch(base2 + '/api/cron')).status === 401);
 const cr = await fetch(base2 + '/api/cron', { headers: { authorization: 'Bearer cron-uji' } });
 t('cron harian: radar, kirim, briefing tersimpan', cr.status === 200 && fs.existsSync(path.join(DATA, 'briefing')), await cr.text());
+
+// ---- 8d. SOP, rapat ke WA pemilik, perintah dua arah ----
+const sistemTerakhir = () => calls.filter((c) => c.u === '/v1/messages').at(-1).b.system[0].text;
+t('SOP umum ikut dibaca agent', /SOP \(ikuti[\s\S]*format-hasil-kerja/.test(calls.filter((c) => c.u === '/v1/messages').map((c) => c.b.system[0].text).find((s) => /Kamu Galih/.test(s)) || ''));
+const { bacaSOP } = await import('../lib/tim.mjs');
+t('SOP: README tidak dibaca, folder agent lain tidak ikut', !/SOP agent/.test(bacaSOP('qa')) && bacaSOP('qa') === bacaSOP('teknisi'));
+process.env.OWNER_WA = '0812 9999 0000'; process.env.OWNER_NAMA = 'Budi';
+const { jalankanRapat, susunLaporan } = await import('../lib/pemilik.mjs');
+process.env.KARYAWAN_NOW = '2026-11-13T06:40:00+07:00'; // Jumat: hari rutinitas Fajar
+const lapPagi = await susunLaporan('pagi'), lapMalam = await susunLaporan('malam');
+t('laporan pagi: keputusan, tenggat, rutinitas', /Rapat pagi/.test(lapPagi.teks) && /Butuh keputusan Anda/.test(lapPagi.teks) && /Tenggat 7 hari/.test(lapPagi.teks) && /Fajar: Rekap tenggat/.test(lapPagi.teks), lapPagi.teks);
+t('laporan malam: laporan agent dan usulan prioritas', /Rapat malam/.test(lapMalam.teks) && /Usulan prioritas besok/.test(lapMalam.teks), lapMalam.teks);
+const keOwner = () => calls.filter((c) => c.u === '/v26.0/111/messages' && c.b?.to === '6281299990000');
+process.env.KARYAWAN_NOW = '2026-11-13T06:20:00+07:00';
+t('rapat: sebelum 06:30 tidak mengirim', (await jalankanRapat()).length === 0);
+process.env.KARYAWAN_NOW = '2026-11-13T06:40:00+07:00';
+const rp1 = await jalankanRapat(), rp2 = await jalankanRapat();
+t('rapat pagi: di luar jendela 24 jam memakai template, sekali per hari', rp1.length === 1 && rp2.length === 0 && keOwner().at(-1)?.b.type === 'template' && keOwner().at(-1).b.template.name === 'laporan_pemilik_v1', JSON.stringify([rp1, keOwner().at(-1)?.b]));
+delete process.env.KARYAWAN_NOW;
+const nLead = fs.readdirSync(path.join(DATA, 'leads')).length;
+await kirimHook(pesan('111', '6281299990000', 'Budi', 'laporan', 'own1'));
+t('WA pemilik "laporan": dibalas teks laporan, tidak jadi lead', await tunggu(() => keOwner().at(-1)?.b.type === 'text' && /Rapat/.test(keOwner().at(-1).b.text.body)) && fs.readdirSync(path.join(DATA, 'leads')).length === nLead);
+claudeAntre.push({ balasan: 'Prioritas besok: setor PPh PT Maju.', usul_proyek: { judul: 'Rekap PPh', tujuan: 'Rekap tenggat PPh semua klien' } });
+await kirimHook(pesan('111', '6281299990000', 'Budi', 'apa prioritas besok?', 'own2'));
+t('WA pemilik: instruksi diteruskan ke Kepala Staf dan jawabannya dibalas ke WA', await tunggu(() => /Prioritas besok: setor PPh/.test(keOwner().at(-1)?.b.text?.body || '') && /Balas "SUSUN"/.test(keOwner().at(-1).b.text.body)));
+claudeAntre.push({ ringkasan: 'r', tugas: [{ agen: 'kepatuhan', judul: 'Rekap PPh', instruksi: 'x' }] });
+await kirimHook(pesan('111', '6281299990000', 'Budi', 'SUSUN', 'own3'));
+t('WA pemilik "SUSUN": rencana disusun dan dikirim', await tunggu(() => /Rencana "Rekap PPh"/.test(keOwner().at(-1)?.b.text?.body || '')));
+await kirimHook(pesan('111', '6281299990000', 'Budi', 'setujui', 'own4'));
+await kirimHook(pesan('111', '6281299990000', 'Budi', 'setujui', 'own4')); // duplikat dari Meta
+t('WA pemilik "SETUJUI": rencana disetujui, pesan ganda diabaikan', await tunggu(() => /disetujui\. Agent mulai/.test(keOwner().at(-1)?.b.text?.body || '')) && semuaTugas().some((x) => x.judul === 'Rekap PPh' && x.status !== 'rencana'));
+delete process.env.OWNER_WA; delete process.env.OWNER_NAMA;
+
+// ---- 8e. ubah PIN dari dashboard ----
+const ubah = (lama, baru, c = ck) => fetch(base2 + '/api/pin', { method: 'POST', headers: { cookie: c, 'Content-Type': 'application/json' }, body: JSON.stringify({ lama, baru }) });
+t('ubah PIN: PIN lama salah ditolak', (await ubah('0000', '583920')).status === 401);
+t('ubah PIN: PIN lemah (berurutan/berulang/kurang 6) ditolak', (await ubah('2468', '123456')).status === 400 && (await ubah('2468', '777777')).status === 400 && (await ubah('2468', '12345')).status === 400);
+const up = await ubah('2468', '583920'), ck2 = (up.headers.get('set-cookie') || '').split(';')[0];
+t('ubah PIN: berhasil, perangkat ini tetap masuk, sesi lain keluar', up.status === 200 && (await fetch(base2 + '/api/ringkas', { headers: { cookie: ck2 } })).status === 200 && (await fetch(base2 + '/api/ringkas', { headers: { cookie: ck } })).status === 401);
+t('ubah PIN: PIN lama tidak bisa masuk, PIN baru bisa', (await login('2468')).status === 401 && (await login('583920')).status === 200);
+t('ubah PIN: hanya hash yang tersimpan', !JSON.stringify(rd('keamanan', 'pin')).includes('583920'));
+process.env.DASHBOARD_PIN = '914273';
+t('lupa PIN: mengganti DASHBOARD_PIN di server mengalahkan PIN dashboard', (await login('914273')).status === 200 && (await login('583920')).status === 401);
+process.env.DASHBOARD_PIN = '2468'; fs.rmSync(path.join(DATA, 'keamanan', 'pin.json'));
 wh.close();
 
 // ---- 8b. backend Supabase (PostgREST tiruan) + harga live dari pricing_packages ----

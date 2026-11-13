@@ -31,6 +31,11 @@ Tiga fitur yang lazim di platform AI employee lain:
 - **Memori agent** (Tim & Tugas > Ubah): catatan tetap yang dibaca agent di setiap tugas. Saat meminta revisi, pilih OK di pertanyaan "Ingat catatan ini" agar catatannya masuk memori.
 - **Rutinitas terjadwal** (Tim & Tugas > Ubah): satu baris per rutinitas, `senin,kamis 07:00 | Judul | Instruksi` atau `setiap hari 16:00 | ...`. Cron membuat tugasnya sekali per hari pada jam itu (06:00-21:50 WIB); hasilnya tetap masuk Meja Keputusan.
 
+Tiga fitur dari pola "kantor AI" yang sudah berjalan (manajer + SOP + rapat lewat WA):
+- **SOP per agent**: file Markdown di `sop/umum/` (semua agent) dan `sop/<id-agent>/`, dibaca sebelum bekerja. Lihat [sop/README.md](sop/README.md).
+- **Rapat ke WA pemilik**: isi `OWNER_WA` (nomor Anda), opsional `OWNER_NAMA` (samakan dengan nama login dashboard), `OWNER_UNIT` (nomor bisnis pengirim, bawaan `adyaspace`), `DASHBOARD_URL`. Pukul 06:30 laporan pagi (keputusan, tenggat, SLA, rutinitas), 21:00 laporan malam (laporan tiap agent, usulan prioritas besok). Tanpa AI, 0 token. Di luar jendela 24 jam dikirim template `laporan_pemilik_v1` (ajukan di WhatsApp Manager, lihat `templates/laporan_pemilik.json`). Jam bisa diubah lewat `RAPAT_PAGI` / `RAPAT_MALAM`.
+- **Perintah lewat WA**: pesan dari `OWNER_WA` tidak menjadi lead, tapi diteruskan ke Kepala Staf dan jawabannya dibalas ke WA. Kata kunci: `laporan` (ringkasan tanpa AI), `SUSUN` (susun rencana dari usulan proyek terakhir), `SETUJUI` (setujui rencana terbaru). Pesan ke pelanggan tetap disetujui dari dashboard.
+
 Alur: tujuan → rencana Kepala Staf → Anda setujui → agent bekerja berurutan → hasil ditinjau (setujui / minta revisi / tolak). Pesan WA yang diusulkan agent masuk Meja Keputusan, tidak pernah terkirim tanpa persetujuan.
 
 Biaya: tarif per model ada di `aturan/tim.json` (Sonnet 5.5 $2/$10, Haiku 5.5 $0,10/$0,50 per juta token, per Nov 2026). Setiap proyek punya anggaran; tugas berhenti (tertahan) saat anggaran atau batas harian `batas_harian_usd` tercapai.

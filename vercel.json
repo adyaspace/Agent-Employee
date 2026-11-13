@@ -10,7 +10,7 @@
   "functions": {
     "api/index.mjs": {
       "maxDuration": 60,
-      "includeFiles": "{brands,pengetahuan,templates,aturan,ui}/**"
+      "includeFiles": "{brands,pengetahuan,templates,aturan,ui,sop}/**"
     }
   },
   "crons": [
