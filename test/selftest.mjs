@@ -141,6 +141,10 @@ t('dashboard: ringkasan memuat keputusan, tenggat, dan kesiapan', rg.keputusan.l
 const target = rg.keputusan.find((a) => !a.masalah?.length);
 const ap = await (await fetch(`${base2}/api/aksi/${target.id}/setujui`, { method: 'POST', headers: { cookie: ck, 'Content-Type': 'application/json' }, body: '{}' })).json();
 t('dashboard: setujui tercatat atas nama sesi dan langsung dicoba kirim (simulasi)', /^DRY-RUN/.test(ap.hasil) && rd('aksi', target.id).riwayat.at(-1).oleh === 'Budi', JSON.stringify(ap));
+t('dashboard: sesi berlaku 30 hari', /Max-Age=2592000/.test(lr.headers.get('set-cookie')));
+process.env.DASHBOARD_PIN = '135790';
+t('dashboard: ganti PIN mengeluarkan sesi lama', (await fetch(base2 + '/api/ringkas', { headers: { cookie: ck } })).status === 401);
+process.env.DASHBOARD_PIN = '2468';
 t('dashboard: cookie palsu ditolak', (await fetch(base2 + '/api/ringkas', { headers: { cookie: 'ka_sesi=abc.def' } })).status === 401);
 t('dashboard: halaman UI tersaji', /Meja Keputusan/.test(await (await fetch(base2 + '/')).text()));
 t('dashboard: kantor.js tersaji', (await fetch(base2 + '/app/kantor.js')).headers.get('content-type')?.startsWith('text/javascript'));

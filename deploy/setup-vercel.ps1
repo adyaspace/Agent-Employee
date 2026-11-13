@@ -42,7 +42,8 @@ if ($LASTEXITCODE -ne 0) { vercel link --yes --scope $scope }
 if ($LASTEXITCODE -ne 0) { Write-Host 'Gagal link project. Berhenti.' -ForegroundColor Red; exit 1 }
 
 Langkah 'Isi environment variables'
-$pin = Rahasia 16
+$b6 = New-Object byte[] 6; [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($b6)
+$pin = -join ($b6 | ForEach-Object { $_ % 10 }) # 6 digit, mudah diingat; percobaan login dibatasi server (PowerShell 5.1 tidak punya GetInt32)
 SetEnv 'SUPABASE_URL' 'https://gvikzfnxxgcbaoapeipq.supabase.co'
 SetEnv 'NODEJS_HELPERS' '0'
 SetEnv 'CS_AUTODRAFT' '1'

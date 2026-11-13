@@ -71,7 +71,7 @@ Skrip membuat project Vercel `karyawan-ai`, mengisi rahasia (dibuat di laptop An
 Yang berjalan online:
 | Path | Fungsi |
 |---|---|
-| `/` | Meja Keputusan (login nama + PIN, sesi 12 jam) |
+| `/` | Meja Keputusan (login nama + PIN 6 digit, tetap masuk 30 hari per perangkat; ganti PIN = semua perangkat keluar) |
 | `/webhook` | Callback URL WhatsApp Cloud API |
 | `/api/cron` | Tiap 10 menit, 06.00-21.59 WIB (paket Pro): radar, draf CS yang tertunda, kirim yang disetujui, antrean tugas agent, briefing. Aman diulang: usulan berkunci unik, kirim tidak dobel |
 
