@@ -36,6 +36,9 @@ Tiga fitur dari pola "kantor AI" yang sudah berjalan (manajer + SOP + rapat lewa
 - **Rapat ke WA pemilik**: isi `OWNER_WA` (nomor Anda), opsional `OWNER_NAMA` (samakan dengan nama login dashboard), `OWNER_UNIT` (nomor bisnis pengirim, bawaan `adyaspace`), `DASHBOARD_URL`. Pukul 06:30 laporan pagi (keputusan, tenggat, SLA, rutinitas), 21:00 laporan malam (laporan tiap agent, usulan prioritas besok). Tanpa AI, 0 token. Di luar jendela 24 jam dikirim template `laporan_pemilik_v1` (ajukan di WhatsApp Manager, lihat `templates/laporan_pemilik.json`). Jam bisa diubah lewat `RAPAT_PAGI` / `RAPAT_MALAM`.
 - **Perintah lewat WA**: pesan dari `OWNER_WA` tidak menjadi lead, tapi diteruskan ke Kepala Staf dan jawabannya dibalas ke WA. Kata kunci: `laporan` (ringkasan tanpa AI), `SUSUN` (susun rencana dari usulan proyek terakhir), `SETUJUI` (setujui rencana terbaru). Pesan ke pelanggan tetap disetujui dari dashboard.
 
+- **QA otomatis**: hasil setiap agent ditinjau agent `qa` (Galih) sebelum sampai ke Anda. Gagal: dikembalikan ke agent sekali dengan catatan QA; putaran kedua langsung ke Anda beserta catatannya. Usulan pesan WA baru dibuat setelah lolos. Matikan dengan `"qa_otomatis": false` di `aturan/tim.json` atau menonaktifkan agent QA. Setiap tinjauan menambah satu panggilan AI (model Galih).
+- **Setujui semua hasil**: tombol di kartu proyek untuk menyetujui semua hasil yang menunggu tinjauan sekaligus. Pesan WA tetap diputuskan satu per satu.
+
 Alur: tujuan → rencana Kepala Staf → Anda setujui → agent bekerja berurutan → hasil ditinjau (setujui / minta revisi / tolak). Pesan WA yang diusulkan agent masuk Meja Keputusan, tidak pernah terkirim tanpa persetujuan.
 
 Biaya: tarif per model ada di `aturan/tim.json` (Sonnet 5.5 $2/$10, Haiku 5.5 $0,10/$0,50 per juta token, per Nov 2026). Setiap proyek punya anggaran; tugas berhenti (tertahan) saat anggaran atau batas harian `batas_harian_usd` tercapai.

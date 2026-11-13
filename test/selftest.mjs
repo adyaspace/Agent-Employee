@@ -31,7 +31,7 @@ const env = {
   META_API_BASE: base, ANTHROPIC_API_BASE: base, ANTHROPIC_API_KEY: 'x',
   WA_PHONE_ID_ADYASPACE: '111', WA_TOKEN_ADYASPACE: 't', WA_PHONE_ID_PIRAMID_FORKLIFT: '222', WA_TOKEN_PIRAMID_FORKLIFT: 't',
   WA_APP_SECRET: 'rahasia', WA_VERIFY_TOKEN: 'verif', DASHBOARD_PIN: '2468', AUTOPILOT: '', KARYAWAN_LIVE: '', CS_AUTODRAFT: '0',
-  CRON_SECRET: 'cron-uji', SUPABASE_URL: '', SUPABASE_SERVICE_ROLE_KEY: '', VERCEL: '',
+  TIM_QA: '0', CRON_SECRET: 'cron-uji', SUPABASE_URL: '', SUPABASE_SERVICE_ROLE_KEY: '', VERCEL: '',
 };
 Object.assign(process.env, env);
 const run = async (s, a, e = {}) => {
@@ -249,6 +249,29 @@ await kirimHook(pesan('111', '6281299990000', 'Budi', 'setujui', 'own4'));
 await kirimHook(pesan('111', '6281299990000', 'Budi', 'setujui', 'own4')); // duplikat dari Meta
 t('WA pemilik "SETUJUI": rencana disetujui, pesan ganda diabaikan', await tunggu(() => /disetujui\. Agent mulai/.test(keOwner().at(-1)?.b.text?.body || '')) && semuaTugas().some((x) => x.judul === 'Rekap PPh' && x.status !== 'rencana'));
 delete process.env.OWNER_WA; delete process.env.OWNER_NAMA;
+
+// ---- 8f. QA otomatis dan setujui semua hasil ----
+while ((await api('/api/tim/jalan', {})).j.jalan) { /* habiskan antrean dari uji sebelumnya agar tidak memakan jawaban tiruan */ }
+claudeAntre.length = 0;
+process.env.TIM_QA = '1';
+const nAksi = () => fs.readdirSync(path.join(DATA, 'aksi')).length, aksiAwal = nAksi();
+claudeAntre.push({ ringkasan: 'Draf 1', hasil_md: 'Biaya Rp999.000', butuh_dari_pemilik: [], pesan_wa: [{ lead: rina.id, isi: 'Halo Kak Rina' }] }, { lolos: false, catatan: ['Harga Rp999.000 tidak ada di DATA'] },
+  { ringkasan: 'Draf 2', hasil_md: 'Tanpa harga', butuh_dari_pemilik: [], pesan_wa: [{ lead: rina.id, isi: 'Halo Kak Rina' }] }, { lolos: true, catatan: [] });
+const tq = (await api('/api/tugas', { agen: 'cs-adya', judul: 'Uji QA', instruksi: 'Susun draf' })).j;
+t('QA otomatis: hasil ditolak QA dikembalikan sekali, lalu lolos ke tinjauan pemilik', await tunggu(() => rd('tugas', tq.id).status === 'review') && rd('tugas', tq.id).hasil.md === 'Tanpa harga' && rd('tugas', tq.id).hasil.qa.lolos === true && rd('tugas', tq.id).qa_putaran === 1, JSON.stringify(rd('tugas', tq.id)).slice(0, 400));
+t('QA otomatis: catatan QA sampai ke agent, usulan WA baru dibuat setelah lolos', calls.filter((c) => c.u === '/v1/messages').some((c) => /\[QA\] Harga Rp999\.000/.test(c.b.messages[0].content)) && nAksi() === aksiAwal + 1);
+claudeAntre.push({ ringkasan: 'D', hasil_md: 'x', butuh_dari_pemilik: [] }, { lolos: false, catatan: ['a'] }, { ringkasan: 'D2', hasil_md: 'y', butuh_dari_pemilik: [] }, { lolos: false, catatan: ['masih kurang'] });
+const tq2 = (await api('/api/tugas', { agen: 'analis', judul: 'Uji QA 2', instruksi: 'x' })).j;
+t('QA otomatis: gagal dua kali tidak berputar terus, sampai ke pemilik dengan catatan', await tunggu(() => rd('tugas', tq2.id).status === 'review') && rd('tugas', tq2.id).hasil.qa.lolos === false && rd('tugas', tq2.id).hasil.qa.catatan[0] === 'masih kurang');
+await api(`/api/tugas/${tq.id}/setujui`, {});
+t('kepercayaan: revisi dari QA tidak dihitung sebagai koreksi pemilik', (await api('/api/ringkas')).j.kepercayaan.find((x) => x.agen === 'Laras').diedit === 0);
+process.env.TIM_QA = '0';
+claudeAntre.push({ ringkasan: 'r', tugas: [{ agen: 'analis', judul: 'A1', instruksi: 'x' }, { agen: 'konten', judul: 'A2', instruksi: 'y' }] }, { ringkasan: '1', hasil_md: '1', butuh_dari_pemilik: [] }, { ringkasan: '2', hasil_md: '2', butuh_dari_pemilik: [] });
+const pr3 = (await api('/api/proyek', { tujuan: 'Uji setujui semua', batas_usd: 1 })).j.proyek;
+await api(`/api/proyek/${pr3.id}/setujui`, {});
+await tunggu(() => semuaTugas().filter((x) => x.proyek === pr3.id).every((x) => x.status === 'review'));
+const sh = await api(`/api/proyek/${pr3.id}/setujui-hasil`, {});
+t('setujui semua hasil: seluruh tugas proyek selesai sekaligus', sh.j.disetujui === 2 && rd('proyek', pr3.id).status === 'selesai', JSON.stringify(sh.j));
 
 // ---- 8e. ubah PIN dari dashboard ----
 const ubah = (lama, baru, c = ck) => fetch(base2 + '/api/pin', { method: 'POST', headers: { cookie: c, 'Content-Type': 'application/json' }, body: JSON.stringify({ lama, baru }) });

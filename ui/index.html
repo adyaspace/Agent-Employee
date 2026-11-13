@@ -558,6 +558,7 @@ async function htmlTugas(id, diMeja = false) {
     ${diMeja ? `<h3>${esc(t.judul)}</h3>` : ''}
     <p class="note"><strong>Instruksi:</strong> ${esc(t.instruksi)}</p>
     ${t.status === 'gagal' || t.status === 'tertahan' ? `<div class="issues"><strong>${t.status === 'gagal' ? 'Gagal' : 'Tertahan'}</strong><ul><li>${esc(t.riwayat?.at(-1)?.note)}</li></ul></div>` : ''}
+    ${h?.qa ? `<p class="note"><strong>QA ${esc(h.qa.oleh)}: ${h.qa.lolos ? 'lolos' : 'ada catatan'}</strong>${t.qa_putaran ? ' (setelah satu kali perbaikan)' : ''}${h.qa.catatan.length ? `<br>${h.qa.catatan.map(esc).join('<br>')}` : ''}</p>` : ''}
     ${h ? `${h.ringkasan ? `<p><strong>${esc(h.ringkasan)}</strong></p>` : ''}<div class="md">${md(h.md)}</div>
       ${(h.butuh || []).length ? `<div class="note" style="margin-top:12px"><strong>Butuh dari Anda:</strong><ul>${h.butuh.map((b) => `<li>${esc(b)}</li>`).join('')}</ul></div>` : ''}
       ${(h.pesan_wa || []).length ? `<p class="hint">${h.pesan_wa.length} usulan pesan WA dari tugas ini menunggu di daftar Butuh keputusan.</p>` : ''}` : (t.status === 'berjalan' ? '<p class="sub">Agent sedang mengerjakan…</p>' : '')}
@@ -608,6 +609,7 @@ function renderTim() {
       ${p.status === 'menunggu_rencana' ? `<ol class="sub" style="padding-left:18px;margin:8px 0">${tp.sort((a, b) => a.urutan - b.urutan).map((t) => `<li><strong>${esc(namaAgen(t.agen))}</strong>: ${esc(t.judul)}</li>`).join('')}</ol>` : ''}
       <div class="actions" style="margin-top:8px">
         ${p.status === 'menunggu_rencana' ? `<button class="btn primary" data-p="setujui" data-id="${esc(p.id)}">Setujui rencana</button>` : ''}
+        ${tp.some((t) => t.status === 'review') ? `<button class="btn primary" data-p="setujui-hasil" data-id="${esc(p.id)}">Setujui semua hasil (${tp.filter((t) => t.status === 'review').length})</button>` : ''}
         ${['menunggu_rencana', 'berjalan'].includes(p.status) ? `<button class="btn" data-p="batal" data-id="${esc(p.id)}">Batalkan</button>` : ''}
         ${p.status === 'berjalan' && pct >= 100 ? `<button class="btn" data-p="anggaran" data-id="${esc(p.id)}">Naikkan anggaran</button>` : ''}
       </div></div>`;
@@ -625,6 +627,7 @@ document.addEventListener('click', async (e) => {
   const p = e.target.closest('[data-p]'); if (p) {
     const act = p.dataset.p; let body = {};
     if (act === 'batal' && !confirm('Batalkan proyek ini? Tugas yang belum dikerjakan ikut dibatalkan.')) return;
+    if (act === 'setujui-hasil' && !confirm('Setujui semua hasil yang menunggu tinjauan di proyek ini? Usulan pesan WA tetap diputuskan satu per satu di Meja Keputusan.')) return;
     if (act === 'anggaran') { const v = prompt('Anggaran baru proyek ini (USD):', '5'); if (!v) return; body = { batas_usd: +v }; }
     p.disabled = true;
     try { await api(`/api/proyek/${encodeURIComponent(p.dataset.id)}/${act}`, body); await muatTim(); } catch (err) { alert(err.message); p.disabled = false; }
