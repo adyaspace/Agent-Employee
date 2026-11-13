@@ -1,0 +1,6 @@
+{
+  "meta_template": "pengingat_servis_v1",
+  "kategori": "utility",
+  "params": ["nama", "label", "tanggal"],
+  "teks": "Halo {nama}, dari {unit_nama}: jadwal {label} jatuh pada {tanggal}. Balas pesan ini untuk memilih waktu kunjungan teknisi."
+}

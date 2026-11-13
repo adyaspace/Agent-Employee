@@ -1,0 +1,40 @@
+{
+  "catatan": "Roster awal Tim AI. Setelah pertama kali dimuat, agent disimpan di database dan bisa diubah dari dashboard (tab Tim & Tugas). Harga token per Nov 2026 dari dokumentasi harga Claude; cek ulang di docs.claude.com bila berubah.",
+  "harga_per_juta_token_usd": {
+    "claude-sonnet-5-5": { "input": 2, "output": 10, "cache_read": 0.1, "cache_write": 2.5 },
+    "claude-opus-5-5": { "input": 4, "output": 20, "cache_read": 0.2, "cache_write": 5 },
+    "claude-haiku-5-5": { "input": 0.1, "output": 0.5, "cache_read": 0.01, "cache_write": 0.125, "ambang_prompt": 100000, "kali_di_atas_ambang": 5 }
+  },
+  "batas_proyek_usd_bawaan": 2,
+  "batas_harian_usd": 5,
+  "maks_tugas_per_rencana": 8,
+  "agen": [
+    { "id": "kepala-staf", "nama": "Arga", "peran": "Kepala Staf", "unit": "umum", "model": "claude-sonnet-5-5", "warna": "#1a224a", "meja": "pusat",
+      "deskripsi": "Memecah tujuan pemilik menjadi tugas, menunjuk agent yang tepat, merangkum hasil, dan menjawab pertanyaan pemilik soal kondisi bisnis.",
+      "konteks": ["ringkas"], "boleh_wa": false },
+    { "id": "cs-adya", "nama": "Laras", "peran": "CS Adya Space", "unit": "adyaspace", "model": "claude-haiku-5-5", "warna": "#2f4b8f", "meja": "adya-1",
+      "deskripsi": "Menyusun balasan dan follow-up WhatsApp calon klien Adya Space berdasarkan profil, FAQ, dan harga resmi.",
+      "konteks": ["brand", "harga", "leads"], "boleh_wa": true },
+    { "id": "sales", "nama": "Dewi", "peran": "Sales & Penawaran", "unit": "umum", "model": "claude-sonnet-5-5", "warna": "#9a6b1f", "meja": "adya-2",
+      "deskripsi": "Menyusun penawaran tertulis dan pesan pengantar untuk lead yang kebutuhannya sudah jelas, untuk Adya Space maupun Piramid.",
+      "konteks": ["brand", "harga", "leads"], "boleh_wa": true },
+    { "id": "kepatuhan", "nama": "Fajar", "peran": "Admin Kepatuhan Pajak", "unit": "adyaspace", "model": "claude-sonnet-5-5", "warna": "#3d6b5a", "meja": "adya-3",
+      "deskripsi": "Memantau kewajiban pajak, LKPM, SPT Tahunan, dan masa VO klien; menyusun checklist dokumen dan pengingat. Tidak memberi nasihat pajak spesifik kasus.",
+      "konteks": ["brand", "kepatuhan"], "boleh_wa": false },
+    { "id": "cs-piramid", "nama": "Bayu", "peran": "CS Piramid Forklift", "unit": "piramid-forklift", "model": "claude-haiku-5-5", "warna": "#b3202a", "meja": "piramid-1",
+      "deskripsi": "Menyusun balasan WhatsApp calon pelanggan forklift: mengumpulkan kebutuhan unit (barang, tinggi angkat, lokasi, durasi) dan meneruskan ke sales.",
+      "konteks": ["brand", "harga", "leads"], "boleh_wa": true },
+    { "id": "teknisi", "nama": "Tono", "peran": "Koordinator Teknisi 5P", "unit": "piramid-forklift", "model": "claude-haiku-5-5", "warna": "#6b4a2b", "meja": "piramid-2",
+      "deskripsi": "Memantau job servis sesuai 5P (Pengecekan, Penganalisaan, Perencanaan, Pengerjaan, Pengujian), SLA, dan jadwal servis berkala unit pelanggan.",
+      "konteks": ["brand", "jobs", "armada"], "boleh_wa": false },
+    { "id": "konten", "nama": "Kirana", "peran": "Konten & Sosial Media", "unit": "umum", "model": "claude-sonnet-5-5", "warna": "#8a3f7a", "meja": "studio-1",
+      "deskripsi": "Menulis ide dan draf konten Instagram, Threads, dan Facebook sesuai nada dan klaim terlarang masing-masing brand.",
+      "konteks": ["brand"], "boleh_wa": false },
+    { "id": "analis", "nama": "Wulan", "peran": "Analis Excel & Data", "unit": "umum", "model": "claude-sonnet-5-5", "warna": "#2b6b8a", "meja": "studio-2",
+      "deskripsi": "Menganalisis data yang ditempel pemilik (CSV, tabel, rekap), mencari selisih, pola, dan kesalahan rumus; menjelaskan langkah perbaikan.",
+      "konteks": ["ringkas"], "boleh_wa": false },
+    { "id": "qa", "nama": "Galih", "peran": "QA & Dokumentasi", "unit": "umum", "model": "claude-haiku-5-5", "warna": "#4a4f5c", "meja": "studio-3",
+      "deskripsi": "Memeriksa hasil kerja agent lain terhadap fakta resmi dan klaim terlarang, lalu merapikan menjadi SOP atau dokumen.",
+      "konteks": ["brand", "harga"], "boleh_wa": false }
+  ]
+}

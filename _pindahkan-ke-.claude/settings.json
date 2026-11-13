@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node bin/ai.mjs:*)",
+      "Bash(node bin/radar.mjs:*)",
+      "Bash(node bin/briefing.mjs:*)",
+      "Bash(node bin/kirim.mjs)",
+      "Bash(node scripts/kq.mjs:*)",
+      "Bash(node scripts/publish.mjs:*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Bash(cat .env*)",
+      "Bash(node bin/ai.mjs aksi setujui:*)",
+      "Bash(node bin/ai.mjs aksi tolak:*)",
+      "Bash(node bin/ai.mjs aksi ulang:*)",
+      "Bash(node bin/kirim.mjs --live:*)",
+      "Bash(KARYAWAN_LIVE=*)",
+      "Bash(curl:*)",
+      "Bash(node scripts/kq.mjs approve:*)",
+      "Bash(node scripts/kq.mjs reject:*)",
+      "Bash(node scripts/kq.mjs revise:*)",
+      "Bash(node scripts/kq.mjs posted:*)",
+      "Bash(node scripts/kq.mjs retry:*)",
+      "Bash(KONTEN_LIVE=*)"
+    ]
+  }
+}

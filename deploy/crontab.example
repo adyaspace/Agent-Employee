@@ -1,0 +1,14 @@
+# crontab -e  (ganti /opt/karyawan-ai dengan lokasi proyek di VPS; zona waktu server set ke Asia/Jakarta)
+# Webhook dan dashboard berjalan terus lewat systemd atau pm2 (lihat README).
+
+# Kirim aksi WA yang sudah disetujui, tiap 2 menit, jam 07.00-21.59
+*/2 7-21 * * *  /opt/karyawan-ai/deploy/cron-kirim.sh
+# Cadangan CS: susun draf untuk pesan yang terlewat webhook, tiap 10 menit
+*/10 * * * *    cd /opt/karyawan-ai && node bin/cs-draft.mjs >> logs/cs.log 2>&1
+# Radar dan briefing pagi, 06.47 (sebelum pemilik membuka dashboard)
+47 6 * * *      cd /opt/karyawan-ai && node bin/radar.mjs >> logs/radar.log 2>&1 && node bin/briefing.mjs >> logs/briefing.log 2>&1
+# Konten: tayangkan yang jatuh tempo, tiap 10 menit
+*/10 * * * *    /opt/karyawan-ai/deploy/cron-publish.sh
+
+# OPSIONAL setelah alur manual terbukti: rutinitas pagi oleh Claude Code (penawaran, analisis SLA)
+# 13 7 * * 1-6 cd /opt/karyawan-ai && claude -p "Jalankan skill karyawan-harian mode pagi, lalu berhenti." >> logs/pagi.log 2>&1

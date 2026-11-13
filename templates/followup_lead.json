@@ -1,0 +1,6 @@
+{
+  "meta_template": "followup_lead_v1",
+  "kategori": "marketing",
+  "params": ["nama", "kebutuhan"],
+  "teks": "Halo {nama}, kami dari {unit_nama}. Menindaklanjuti obrolan soal {kebutuhan} kemarin: apakah masih ada yang bisa kami bantu? Kalau sudah tidak dibutuhkan, balas BERHENTI dan kami tidak akan menghubungi lagi."
+}

@@ -1,0 +1,18 @@
+{
+  "name": "karyawan-ai",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node test/selftest.mjs && node scripts/selftest.mjs",
+    "dashboard": "node bin/dashboard.mjs",
+    "webhook": "node bin/webhook.mjs",
+    "pagi": "node bin/radar.mjs && node bin/cs-draft.mjs && node bin/briefing.mjs",
+    "contoh": "node bin/contoh.mjs"
+  },
+  "dependencies": {
+    "@vercel/functions": "^3.11.2"
+  }
+}

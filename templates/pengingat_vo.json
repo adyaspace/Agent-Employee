@@ -1,0 +1,6 @@
+{
+  "meta_template": "pengingat_vo_v1",
+  "kategori": "utility",
+  "params": ["nama", "tanggal"],
+  "teks": "Halo {nama}, masa layanan Virtual Office Anda di {unit_nama} berakhir {tanggal}. Balas pesan ini untuk perpanjangan, atau bila alamat domisili usaha akan dipindah."
+}

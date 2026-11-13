@@ -1,0 +1,6 @@
+{
+  "meta_template": "pengingat_kewajiban_v1",
+  "kategori": "utility",
+  "params": ["nama", "label", "tanggal", "batas_kirim"],
+  "teks": "Halo {nama}, pengingat dari {unit_nama}: {label} jatuh tempo {tanggal}. Mohon kirim data atau dokumen yang dibutuhkan ke tim kami paling lambat {batas_kirim} supaya bisa kami proses tepat waktu. Balas pesan ini bila ada pertanyaan."
+}

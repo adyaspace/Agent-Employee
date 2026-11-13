@@ -1,0 +1,22 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": "public",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/index"
+    }
+  ],
+  "functions": {
+    "api/index.mjs": {
+      "maxDuration": 60,
+      "includeFiles": "{brands,pengetahuan,templates,aturan,ui}/**"
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron",
+      "schedule": "47 23 * * *"
+    }
+  ]
+}

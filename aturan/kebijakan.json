@@ -1,0 +1,25 @@
+{
+  "unit_nama": { "adyaspace": "Adya Space", "piramid-forklift": "Piramid Forklift" },
+  "autopilot": {
+    "aktif": true,
+    "catatan": "Tetap mati sampai AUTOPILOT=1 di .env. Hanya aksi berisiko rendah tanpa masalah, dengan jenis dan intent di bawah, yang langsung disetujui.",
+    "jenis": ["wa_balas", "wa_pengingat"],
+    "intent": ["salam", "tanya_alamat_jam", "tanya_layanan"]
+  },
+  "followup_hari": [2, 5, 10],
+  "pengingat_kepatuhan_hari": [7, 3, 1],
+  "pengingat_vo_hari": [30, 14, 3],
+  "pengingat_servis_hari": [7, 1],
+  "sla_5p": [
+    { "dari": "selesai_cek", "ke": "input_cek", "maks_jam": 24, "label": "Input hasil pengecekan ke APPS Piramid maks 1 hari" },
+    { "dari": "input_cek", "ke": "keputusan_analisa", "maks_jam": 72, "label": "Keputusan penganalisaan service report maks 3 hari" },
+    { "dari": "selesai_kerja", "ke": "input_kerja", "maks_jam": 24, "label": "Input hasil pengerjaan ke APPS Piramid maks 1 hari" }
+  ],
+  "batas_kirim_harian": 200,
+  "cs": {
+    "model": "claude-haiku-5-5",
+    "riwayat_pesan": 12,
+    "intent": ["salam", "tanya_alamat_jam", "tanya_layanan", "tanya_harga", "minta_penawaran", "status_order", "jadwal_servis", "darurat_unit", "keluhan", "lainnya"],
+    "eskalasi_intent": ["keluhan", "darurat_unit", "minta_penawaran", "tanya_harga", "status_order"]
+  }
+}

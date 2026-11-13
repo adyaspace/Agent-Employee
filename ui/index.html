@@ -1,0 +1,734 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Karyawan AI</title>
+<script type="importmap">{"imports":{"three":"/vendor/three.module.min.js","three/addons/":"/vendor/addons/"}}</script>
+<style>
+  /* Mode Operate: layar kerja pemilik. Satu tinta, satu kanvas hangat, merah dan navy hanya sebagai penanda unit. */
+  :root {
+    --ink: #14171f; --ink-2: #4a4f5c; --ink-3: #6b7080;
+    --canvas: #f5f3ee; --surface: #ffffff; --line: #e2dfd7; --line-2: #cfcbc1;
+    --adya: #1a224a; --piramid: #d90429;
+    --act: #1a224a; --act-ink: #ffffff;
+    --tinggi-bg: #fbe9e4; --tinggi: #8f2a12;
+    --sedang-bg: #f6efd9; --sedang: #6e5410;
+    --rendah-bg: #e8efe6; --rendah: #2f5a2a;
+    --focus: #2b5fd9;
+    --r: 6px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--canvas); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+  button, input, textarea, select { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .num { font-variant-numeric: tabular-nums; }
+
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 14px 24px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  header h1 { font-size: 17px; font-weight: 650; margin: 0; letter-spacing: -0.01em; }
+  header .tgl { color: var(--ink-3); }
+  .who { margin-left: auto; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .who label { font-size: 13px; color: var(--ink-2); }
+  .who input { width: 140px; padding: 6px 8px; border: 1px solid var(--line-2); border-radius: var(--r); background: var(--surface); }
+  .who input[type=password] { width: 90px; }
+  .banner { padding: 10px 24px; background: var(--sedang-bg); color: var(--sedang); font-size: 14px; border-bottom: 1px solid var(--line); }
+
+  main { display: grid; grid-template-columns: minmax(280px, 380px) minmax(0, 1fr) minmax(260px, 320px); gap: 0; min-height: calc(100vh - 60px); }
+  .col { padding: 20px 24px; min-width: 0; }
+  .col + .col { border-left: 1px solid var(--line); }
+  h2 { font-size: 13px; font-weight: 650; color: var(--ink-2); margin: 0 0 10px; display: flex; justify-content: space-between; align-items: baseline; }
+  h2 .n { color: var(--ink-3); font-weight: 500; }
+  section + section { margin-top: 28px; }
+
+  /* Daftar keputusan */
+  .list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .item { width: 100%; text-align: left; display: grid; gap: 4px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); cursor: pointer; }
+  .item:hover { border-color: var(--line-2); }
+  .item[aria-current=true] { border-color: var(--ink); box-shadow: 0 1px 0 var(--ink); }
+  .item .top { display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--ink-3); }
+  .item .t { font-weight: 560; line-height: 1.35; }
+  .unit { display: inline-flex; align-items: center; gap: 5px; }
+  .unit::before { content: ""; width: 8px; height: 8px; border-radius: 2px; background: var(--c, var(--ink-3)); }
+  .unit.adyaspace { --c: var(--adya); } .unit.piramid-forklift { --c: var(--piramid); }
+  .risk { font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 4px; }
+  .risk.tinggi { background: var(--tinggi-bg); color: var(--tinggi); }
+  .risk.sedang { background: var(--sedang-bg); color: var(--sedang); }
+  .risk.rendah { background: var(--rendah-bg); color: var(--rendah); }
+  .urgen { font-size: 12px; font-weight: 700; color: var(--tinggi); }
+  .empty { color: var(--ink-2); font-size: 14px; padding: 14px; border: 1px dashed var(--line-2); border-radius: var(--r); background: transparent; }
+
+  /* Panel detail */
+  .detail h3 { font-size: 20px; line-height: 1.3; margin: 2px 0 6px; letter-spacing: -0.01em; font-weight: 650; max-width: 60ch; }
+  .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--ink-2); margin-bottom: 18px; }
+  .issues { margin: 0 0 16px; padding: 12px 14px; background: var(--tinggi-bg); color: var(--tinggi); border-radius: var(--r); font-size: 14px; }
+  .issues ul { margin: 4px 0 0; padding-left: 18px; }
+  .note { margin: 0 0 16px; padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); font-size: 14px; color: var(--ink-2); }
+  .field-l { display: block; font-size: 13px; font-weight: 600; color: var(--ink-2); margin-bottom: 6px; }
+  textarea { width: 100%; min-height: 150px; padding: 12px; border: 1px solid var(--line-2); border-radius: var(--r); background: var(--surface); line-height: 1.55; resize: vertical; }
+  textarea[readonly] { background: #faf9f6; }
+  .hint { font-size: 12.5px; color: var(--ink-3); margin: 6px 0 0; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 16px; }
+  .btn { padding: 9px 16px; border-radius: var(--r); border: 1px solid var(--line-2); background: var(--surface); cursor: pointer; font-weight: 560; }
+  .btn:hover { border-color: var(--ink-3); }
+  .btn.primary { background: var(--act); color: var(--act-ink); border-color: var(--act); }
+  .btn.primary:hover { background: #262f63; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .actions .force { font-size: 13px; color: var(--tinggi); display: none; gap: 6px; align-items: center; }
+  .actions .force.show { display: inline-flex; }
+  .status { font-size: 14px; min-height: 1.5em; margin-top: 10px; }
+  .status.err { color: var(--tinggi); } .status.ok { color: var(--rendah); }
+
+  .thread { margin-top: 26px; }
+  .msg { max-width: 78%; padding: 8px 12px; border-radius: 10px; margin: 6px 0; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .msg.masuk { background: var(--surface); border: 1px solid var(--line); }
+  .msg.keluar { background: #e7eaf3; margin-left: auto; }
+  .msg time { display: block; font-size: 11.5px; color: var(--ink-3); margin-top: 2px; }
+
+  /* Kolom kanan */
+  .rows { list-style: none; margin: 0; padding: 0; }
+  .rows li { padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 14px; display: grid; gap: 2px; }
+  .rows li:last-child { border-bottom: 0; }
+  .rows .sub { font-size: 12.5px; color: var(--ink-3); }
+  .rows .late { color: var(--tinggi); font-weight: 600; }
+  .pipe { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; font-size: 14px; margin: 0; }
+  .pipe dt { color: var(--ink-2); } .pipe dd { margin: 0; text-align: right; }
+  .foot { font-size: 12.5px; color: var(--ink-3); margin-top: 10px; }
+
+  .login { max-width: 380px; margin: 12vh auto; padding: 28px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+  .login h1 { font-size: 20px; margin: 0 0 4px; } .login p { color: var(--ink-2); font-size: 14px; margin: 0 0 20px; }
+  .login label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 14px 0 6px; }
+  .login input { width: 100%; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: var(--r); }
+  .login .btn { width: 100%; margin-top: 20px; }
+  .ready .no { color: var(--tinggi); font-weight: 600; } .ready .yes { color: var(--rendah); }
+  .tools { display: grid; gap: 8px; }
+  .tools .btn { text-align: left; }
+  .mode { font-size: 12.5px; padding: 2px 8px; border-radius: 4px; background: var(--sedang-bg); color: var(--sedang); font-weight: 600; }
+  .mode.on { background: var(--rendah-bg); color: var(--rendah); }
+  .who .nm { font-size: 14px; color: var(--ink-2); }
+  /* navigasi tampilan */
+  .tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+  .tabs button { padding: 7px 12px; border: 1px solid transparent; border-radius: var(--r); background: none; cursor: pointer; font-weight: 560; color: var(--ink-2); }
+  .tabs button[aria-selected=true] { background: var(--canvas); border-color: var(--line); color: var(--ink); }
+  .tabs .badge { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 4px; border-radius: 9px; background: var(--sedang-bg); color: var(--sedang); font-size: 12px; text-align: center; }
+  .view[hidden] { display: none !important; }
+
+  /* kantor 3D */
+  #v-kantor { position: relative; height: calc(100vh - 62px); min-height: 480px; background: #e8e4dc; overflow: hidden; }
+  #kantor-3d { position: absolute; inset: 0; }
+  #kantor-3d canvas { display: block; touch-action: none; }
+  .k-ui { position: absolute; z-index: 2; display: flex; gap: 6px; flex-wrap: wrap; }
+  .k-ui.atas { top: 14px; left: 14px; } .k-ui.bawah { bottom: 14px; left: 14px; right: 14px; justify-content: space-between; align-items: flex-end; pointer-events: none; }
+  .k-ui .btn { background: rgba(255,255,255,.94); padding: 7px 12px; font-size: 13.5px; }
+  .k-ui .btn[aria-pressed=true] { background: var(--act); color: #fff; border-color: var(--act); }
+  .legend { pointer-events: auto; background: rgba(255,255,255,.94); border: 1px solid var(--line); border-radius: var(--r); padding: 8px 12px; font-size: 12.5px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: 0; }
+  .k-load { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink-2); z-index: 1; font-size: 14px; }
+  .k-load[hidden], .k-menu[hidden] { display: none; }
+  .k-menu { position: absolute; z-index: 3; width: 236px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 10px; box-shadow: 0 8px 24px rgba(20,23,31,.16); padding: 12px; }
+  .k-menu h4 { margin: 0; font-size: 15px; } .k-menu .sub { font-size: 12.5px; color: var(--ink-3); margin: 2px 0 10px; }
+  .k-menu .btn { width: 100%; text-align: left; margin-top: 6px; }
+
+  /* tim & tugas */
+  .tim { display: grid; grid-template-columns: minmax(280px, 340px) minmax(0, 1fr) minmax(260px, 320px); min-height: calc(100vh - 62px); }
+  .tim > div { padding: 20px 24px; min-width: 0; } .tim > div + div { border-left: 1px solid var(--line); }
+  .form label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-2); margin: 12px 0 6px; }
+  .form input, .form textarea, .form select { width: 100%; padding: 9px 11px; border: 1px solid var(--line-2); border-radius: var(--r); background: var(--surface); }
+  .form textarea { min-height: 96px; resize: vertical; }
+  .form .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; }
+  .card + .card { margin-top: 8px; }
+  .card h4 { margin: 0 0 4px; font-size: 14.5px; line-height: 1.35; }
+  .meta2 { font-size: 12.5px; color: var(--ink-3); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .chip { font-size: 12px; font-weight: 600; padding: 1px 7px; border-radius: 4px; background: var(--canvas); color: var(--ink-2); border: 1px solid var(--line); }
+  .chip.review, .chip.menunggu_rencana, .chip.menunggu_review { background: var(--sedang-bg); color: var(--sedang); border-color: transparent; }
+  .chip.gagal, .chip.tertahan, .chip.bermasalah { background: var(--tinggi-bg); color: var(--tinggi); border-color: transparent; }
+  .chip.selesai, .chip.bekerja, .chip.berjalan { background: var(--rendah-bg); color: var(--rendah); border-color: transparent; }
+  .bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin: 8px 0 4px; } .bar > i { display: block; height: 100%; background: var(--act); }
+  .bar.over > i { background: var(--tinggi); }
+  .board { display: grid; grid-template-columns: repeat(5, minmax(150px, 1fr)); gap: 10px; overflow-x: auto; }
+  .board h3 { font-size: 12.5px; font-weight: 650; color: var(--ink-2); margin: 0 0 8px; display: flex; justify-content: space-between; }
+  .board .card { cursor: pointer; } .board .card:hover { border-color: var(--line-2); }
+  .agen { display: grid; grid-template-columns: 12px 1fr; gap: 10px; align-items: start; }
+  .agen .dot { width: 12px; height: 12px; border-radius: 3px; margin-top: 4px; }
+  .agen .acts { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; } .agen .acts .btn { padding: 4px 9px; font-size: 12.5px; }
+  .cost { font-size: 13px; color: var(--ink-2); margin: 0 0 14px; }
+
+  /* chat */
+  .chat { max-width: 760px; margin: 0 auto; padding: 20px 24px; display: flex; flex-direction: column; height: calc(100vh - 62px); }
+  .chat .log { flex: 1; overflow-y: auto; padding: 4px 0 16px; }
+  .chat .msg { max-width: 86%; }
+  .chat form { display: flex; gap: 8px; } .chat form textarea { flex: 1; min-height: 52px; max-height: 160px; padding: 10px 12px; border: 1px solid var(--line-2); border-radius: var(--r); resize: vertical; }
+  .saran { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; } .saran button { font-size: 13px; padding: 6px 10px; }
+
+  /* dialog + markdown */
+  dialog { border: 1px solid var(--line-2); border-radius: 12px; padding: 0; width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 48px); box-shadow: 0 16px 48px rgba(20,23,31,.22); }
+  dialog::backdrop { background: rgba(20,23,31,.38); }
+  .dlg-h { display: flex; justify-content: space-between; align-items: start; gap: 12px; padding: 18px 20px 10px; border-bottom: 1px solid var(--line); }
+  .dlg-h h3 { margin: 0; font-size: 18px; } .dlg-b { padding: 14px 20px 20px; overflow-y: auto; max-height: calc(100vh - 170px); }
+  .md { font-size: 14.5px; line-height: 1.6; overflow-wrap: anywhere; } .md h3, .md h4 { margin: 14px 0 6px; } .md ul, .md ol { padding-left: 20px; } .md pre { background: var(--canvas); padding: 10px; border-radius: var(--r); overflow-x: auto; font-size: 13px; } .md code { background: var(--canvas); padding: 0 4px; border-radius: 3px; }
+
+  @media (max-width: 1100px) {
+    .tim { grid-template-columns: 1fr 1fr; } .tim > div:nth-child(2) { grid-column: 1 / -1; grid-row: 2; border-left: 0; border-top: 1px solid var(--line); }
+    main { grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); }
+    .side { grid-column: 1 / -1; border-left: 0 !important; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px 28px; }
+    .side section + section { margin-top: 0; }
+  }
+  @media (max-width: 720px) {
+    .tim { grid-template-columns: 1fr; } .tim > div + div { border-left: 0; border-top: 1px solid var(--line); }
+    .board { grid-template-columns: repeat(5, 72vw); }
+    header { padding: 12px 16px; } .who { margin-left: 0; width: 100%; }
+    main { grid-template-columns: 1fr; }
+    .col { padding: 16px; } .col + .col { border-left: 0; border-top: 1px solid var(--line); }
+    .msg { max-width: 92%; }
+  }
+</style>
+</head>
+<body>
+<form class="login" id="masuk" hidden>
+  <h1>Meja Keputusan</h1>
+  <p>Karyawan AI Adya Space dan Piramid Forklift. Nama Anda dicatat di setiap keputusan.</p>
+  <label for="m-nama">Nama</label>
+  <input id="m-nama" autocomplete="name" required>
+  <label for="m-pin">PIN</label>
+  <input id="m-pin" type="password" autocomplete="current-password" required>
+  <button class="btn primary" type="submit">Masuk</button>
+  <div class="status" id="m-st" role="status"></div>
+</form>
+<div id="app" hidden>
+<header>
+  <h1>Karyawan AI</h1>
+  <nav class="tabs" role="tablist" aria-label="Tampilan">
+    <button role="tab" data-v="keputusan" aria-selected="true">Meja Keputusan<span class="badge num" id="b-kep" hidden></span></button>
+    <button role="tab" data-v="kantor" aria-selected="false">Kantor 3D</button>
+    <button role="tab" data-v="tim" aria-selected="false">Tim &amp; Tugas<span class="badge num" id="b-tim" hidden></span></button>
+    <button role="tab" data-v="chat" aria-selected="false">Kepala Staf</button>
+  </nav>
+  <span class="tgl num" id="tgl"></span>
+  <span class="mode" id="mode" hidden></span>
+  <div class="who"><span class="nm" id="nama"></span><button class="btn" id="keluar" type="button">Keluar</button></div>
+</header>
+
+<main class="view" id="v-keputusan">
+  <div class="col">
+    <section aria-labelledby="h-kep">
+      <h2 id="h-kep">Butuh keputusan <span class="n num" id="n-kep"></span></h2>
+      <ul class="list" id="kep"></ul>
+    </section>
+    <section aria-labelledby="h-rev" id="sec-rev" hidden>
+      <h2 id="h-rev">Hasil kerja agent <span class="n num" id="n-rev"></span></h2>
+      <ul class="list" id="rev"></ul>
+    </section>
+    <section aria-labelledby="h-kon" id="sec-kon" hidden>
+      <h2 id="h-kon">Konten menunggu persetujuan <span class="n num" id="n-kon"></span></h2>
+      <ul class="list" id="kon"></ul>
+    </section>
+    <section aria-labelledby="h-gagal" id="sec-gagal" hidden>
+      <h2 id="h-gagal">Gagal kirim <span class="n num" id="n-gagal"></span></h2>
+      <ul class="list" id="gagal"></ul>
+    </section>
+  </div>
+
+  <div class="col detail" id="detail" aria-live="polite">
+    <div class="empty">Pilih satu item di kiri untuk melihat isi pesan, konteks percakapan, dan memutuskan.</div>
+  </div>
+
+  <aside class="col side">
+    <section aria-labelledby="h-ready" id="sec-ready" hidden>
+      <h2 id="h-ready">Belum siap</h2>
+      <ul class="rows ready" id="ready"></ul>
+    </section>
+    <section aria-labelledby="h-sla">
+      <h2 id="h-sla">Terlambat: SLA 5P Piramid <span class="n num" id="n-sla"></span></h2>
+      <ul class="rows" id="sla"></ul>
+    </section>
+    <section aria-labelledby="h-due">
+      <h2 id="h-due">Jatuh tempo 14 hari</h2>
+      <ul class="rows" id="due"></ul>
+    </section>
+    <section aria-labelledby="h-pipe">
+      <h2 id="h-pipe">Lead aktif</h2>
+      <dl class="pipe num" id="pipe"></dl>
+      <ul class="rows" id="wait"></ul>
+      <p class="foot num" id="auto"></p>
+    </section>
+    <section aria-labelledby="h-tools">
+      <h2 id="h-tools">Jalankan sekarang</h2>
+      <div class="tools">
+        <button class="btn" type="button" data-run="radar">Radar: follow-up dan tenggat</button>
+        <button class="btn" type="button" data-run="cs">Susun draf WA yang belum dibalas</button>
+        <button class="btn" type="button" data-run="kirim">Kirim semua yang disetujui</button>
+      </div>
+      <div class="status" id="run-st" role="status"></div>
+    </section>
+  </aside>
+</main>
+
+<section class="view" id="v-kantor" hidden aria-label="Kantor 3D">
+  <div id="kantor-3d"></div>
+  <div class="k-load" id="k-load">Memuat kantor…</div>
+  <div class="k-ui atas">
+    <button class="btn" type="button" data-cam="iso" aria-pressed="true">Isometrik</button>
+    <button class="btn" type="button" data-cam="atas" aria-pressed="false">Dari atas</button>
+    <button class="btn" type="button" data-cam="pusat" aria-pressed="false">Meja Kepala Staf</button>
+    <button class="btn" type="button" id="k-hemat" aria-pressed="false">Hemat daya</button>
+  </div>
+  <div class="k-ui bawah">
+    <div class="legend"><span><i style="background:#2b5fd9"></i>Bekerja</span><span><i style="background:#e0a100"></i>Menunggu tinjauan</span><span><i style="background:#7a8aa6"></i>Antre</span><span><i style="background:#c0392b"></i>Gagal/tertahan</span><span><i style="background:#7aa36b"></i>Santai (lounge)</span></div>
+    <div class="legend">Klik agent untuk memberi tugas · seret untuk memutar · gulir untuk zoom</div>
+  </div>
+  <div class="k-menu" id="k-menu" hidden></div>
+</section>
+
+<section class="view tim" id="v-tim" hidden aria-label="Tim dan tugas">
+  <div>
+    <h2>Proyek baru</h2>
+    <form class="form" id="f-proyek">
+      <label for="p-tujuan">Tujuan</label>
+      <textarea id="p-tujuan" required placeholder="Contoh: siapkan follow-up untuk semua calon klien virtual office yang belum membalas minggu ini"></textarea>
+      <div class="row2">
+        <div><label for="p-judul">Judul (opsional)</label><input id="p-judul"></div>
+        <div><label for="p-batas">Anggaran (USD)</label><input id="p-batas" type="number" min="0.1" step="0.1" value="2"></div>
+      </div>
+      <button class="btn primary" type="submit" style="margin-top:14px">Minta Kepala Staf menyusun rencana</button>
+      <div class="status" id="p-st" role="status"></div>
+    </form>
+    <h2 style="margin-top:24px">Proyek</h2>
+    <div id="proyek"></div>
+  </div>
+  <div>
+    <p class="cost num" id="biaya"></p>
+    <div class="board" id="board"></div>
+  </div>
+  <div>
+    <h2>Tim <span class="n num" id="n-agen"></span></h2>
+    <div id="agen"></div>
+    <button class="btn" type="button" id="tambah-agen" style="margin-top:10px;width:100%">Tambah agent</button>
+  </div>
+</section>
+
+<section class="view" id="v-chat" hidden aria-label="Chat dengan Kepala Staf">
+  <div class="chat">
+    <div class="log" id="chat-log"></div>
+    <div class="saran" id="saran">
+      <button class="btn" type="button">Apa yang paling perlu saya putuskan hari ini?</button>
+      <button class="btn" type="button">Ringkas kondisi Adya Space dan Piramid minggu ini</button>
+      <button class="btn" type="button">Klien mana yang tenggat pajaknya paling dekat?</button>
+    </div>
+    <form id="f-chat"><textarea id="chat-in" placeholder="Tulis instruksi atau pertanyaan untuk Kepala Staf…" required></textarea><button class="btn primary" type="submit">Kirim</button></form>
+    <div class="status" id="chat-st" role="status"></div>
+  </div>
+</section>
+</div>
+<dialog id="dlg"><div class="dlg-h"><h3 id="dlg-t"></h3><button class="btn" type="button" id="dlg-x">Tutup</button></div><div class="dlg-b" id="dlg-b"></div></dialog>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const NAMA = { adyaspace: 'Adya Space', 'piramid-forklift': 'Piramid' };
+const JENIS = { wa_balas: 'Balasan WA', wa_followup: 'Follow-up WA', wa_pengingat: 'Pengingat WA', wa_penawaran: 'Penawaran WA', wa_agen: 'Pesan dari agent' };
+const rp = (n) => 'Rp' + Math.round(n).toLocaleString('id-ID');
+const tglID = (s) => new Date(s.length === 10 ? s + 'T00:00:00+07:00' : s).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', timeZone: 'Asia/Jakarta' });
+const jamID = (s) => new Date(s).toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
+const unitTag = (u) => `<span class="unit ${esc(u)}">${esc(NAMA[u] || u)}</span>`;
+
+let data = null, pilih = null;
+
+async function api(path, body) {
+  const opt = body ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {};
+  const r = await fetch(path, opt), j = await r.json().catch(() => ({}));
+  if (r.status === 401 && j.perlu_masuk) { tampilMasuk(); throw new Error('Sesi berakhir, silakan masuk lagi.'); }
+  if (!r.ok) throw new Error(j.error || 'Galat ' + r.status);
+  return j;
+}
+function tampilMasuk() { $('#app').hidden = true; $('#masuk').hidden = false; try { $('#m-nama').value ||= localStorage.getItem('by') || ''; } catch {} ($('#m-nama').value ? $('#m-pin') : $('#m-nama')).focus(); }
+$('#masuk').addEventListener('submit', async (e) => {
+  e.preventDefault(); const st = $('#m-st'); st.className = 'status'; st.textContent = 'Memeriksa…';
+  try {
+    const r = await fetch('/api/masuk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nama: $('#m-nama').value, pin: $('#m-pin').value }) });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || 'Gagal masuk');
+    try { localStorage.setItem('by', j.nama); } catch {}
+    $('#m-pin').value = ''; st.textContent = ''; $('#masuk').hidden = true; $('#app').hidden = false; muat();
+  } catch (err) { st.className = 'status err'; st.textContent = err.message; }
+});
+$('#keluar').addEventListener('click', async () => { await fetch('/api/keluar', { method: 'POST' }); tampilMasuk(); });
+document.querySelectorAll('[data-run]').forEach((b) => b.addEventListener('click', async () => {
+  const st = $('#run-st'); document.querySelectorAll('[data-run]').forEach((x) => (x.disabled = true));
+  st.className = 'status'; st.textContent = 'Menjalankan…';
+  try {
+    const r = await api('/api/jalankan/' + b.dataset.run, {});
+    const n = (r.hasil || []).length;
+    st.className = 'status ok';
+    st.textContent = n ? `${n} hasil${b.dataset.run === 'kirim' && !r.hidup ? ' (simulasi, belum terkirim)' : ''}. ${r.hasil.slice(0, 3).map((x) => String(x).split('\n')[0].replace(/^aksi-\S+ \S+ /, '')).join(' · ')}` : 'Tidak ada yang perlu dikerjakan.';
+    await muat();
+  } catch (err) { st.className = 'status err'; st.textContent = err.message; }
+  document.querySelectorAll('[data-run]').forEach((x) => (x.disabled = false));
+}));
+
+function itemAksi(a) {
+  return `<li><button class="item" data-k="aksi" data-id="${esc(a.id)}" aria-current="${pilih?.id === a.id}">
+    <span class="top">${unitTag(a.unit)}<span>${esc(JENIS[a.jenis] || a.jenis)}</span>${a.urgen ? '<span class="urgen">Urgen</span>' : ''}<span class="risk ${esc(a.risiko)}" style="margin-left:auto">${esc(a.risiko)}</span></span>
+    <span class="t">${esc(a.ringkas)}</span></button></li>`;
+}
+function itemKonten(k) {
+  return `<li><button class="item" data-k="konten" data-id="${esc(k.id)}" aria-current="${pilih?.id === k.id}">
+    <span class="top">${unitTag(k.brand === 'piramid-forklift' ? 'piramid-forklift' : 'adyaspace')}<span>${esc(k.channel)}</span><span class="num" style="margin-left:auto">${k.scheduled_at ? esc(jamID(k.scheduled_at)) : 'belum dijadwal'}</span></span>
+    <span class="t">${esc(k.topic || k.id)}</span></button></li>`;
+}
+
+function render() {
+  const d = data;
+  $('#tgl').textContent = new Date(d.tanggal + 'T00:00:00+07:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  $('#nama').textContent = d.nama;
+  const k = d.kesiapan; $('#mode').hidden = false; $('#mode').textContent = k.kirim_hidup ? 'Kirim: hidup' : 'Kirim: simulasi'; $('#mode').classList.toggle('on', k.kirim_hidup);
+  const kurang = [
+    !k.ai && ['CS AI', 'ANTHROPIC_API_KEY belum diisi'],
+    !k.wa.adyaspace && ['WA Adya Space', 'WA_PHONE_ID / WA_TOKEN belum diisi'],
+    !k.wa['piramid-forklift'] && ['WA Piramid', 'WA_PHONE_ID / WA_TOKEN belum diisi'],
+    !k.webhook && ['Webhook', 'WA_APP_SECRET / WA_VERIFY_TOKEN belum diisi'],
+    !k.kirim_hidup && ['Kirim', 'KARYAWAN_LIVE belum 1: pesan hanya disimulasikan'],
+  ].filter(Boolean);
+  $('#sec-ready').hidden = !kurang.length;
+  $('#ready').innerHTML = kurang.map(([a, b]) => `<li><span>${esc(a)}</span><span class="sub">${esc(b)}</span></li>`).join('');
+  $('#n-kep').textContent = d.keputusan.length || '';
+  $('#kep').innerHTML = d.keputusan.length ? d.keputusan.map(itemAksi).join('')
+    : '<li class="empty">Tidak ada yang perlu diputuskan. Usulan baru muncul di sini saat CS menyusun balasan WA atau radar pagi menemukan follow-up dan tenggat.</li>';
+  const rv = d.tugas_review || [];
+  $('#sec-rev').hidden = !rv.length; $('#n-rev').textContent = rv.length;
+  $('#rev').innerHTML = rv.map((t) => `<li><button class="item" data-k="tugas" data-id="${esc(t.id)}" aria-current="${pilih?.id === t.id}">
+    <span class="top"><span>${esc(t.agen_nama)}</span><span class="chip review" style="margin-left:auto">tinjau</span></span><span class="t">${esc(t.judul)}</span></button></li>`).join('');
+  const nb = d.keputusan.length + rv.length + d.konten.length; $('#b-kep').hidden = !nb; $('#b-kep').textContent = nb;
+  $('#sec-kon').hidden = !d.konten.length; $('#n-kon').textContent = d.konten.length; $('#kon').innerHTML = d.konten.map(itemKonten).join('');
+  $('#sec-gagal').hidden = !d.gagal.length; $('#n-gagal').textContent = d.gagal.length; $('#gagal').innerHTML = d.gagal.map(itemAksi).join('');
+
+  $('#n-sla').textContent = d.sla.length || '';
+  $('#sla').innerHTML = d.sla.length ? d.sla.map((x) => `<li><span>${esc(x.pelanggan)} <span class="sub">· ${esc(x.teknisi)}</span></span><span class="sub">${esc(x.aturan)}</span><span class="late num">lewat ${x.lewat_jam} jam</span></li>`).join('')
+    : `<li class="sub">Semua job dalam batas waktu. ${d.jobs.length ? d.jobs.length + ' job berjalan.' : 'Belum ada job tercatat: catat lewat bin/ai.mjs job baru.'}</li>`;
+  $('#due').innerHTML = d.tenggat.length ? d.tenggat.map((t) => `<li><span>${esc(t.label)}</span><span class="sub">${unitTag(t.unit)} · ${esc(t.nama)}</span><span class="sub num">${esc(tglID(t.jatuh_tempo))} · ${t.sisa_hari === 0 ? '<span class="late">hari ini</span>' : 'H-' + t.sisa_hari}</span></li>`).join('')
+    : '<li class="sub">Tidak ada tenggat dalam 14 hari. Daftarkan klien dan unit agar kalender terisi.</li>';
+  $('#pipe').innerHTML = d.pipeline.map((p) => `<dt>${esc(p.tahap)}</dt><dd>${p.jumlah}${p.nilai ? ' · ' + rp(p.nilai) : ''}</dd>`).join('');
+  $('#wait').innerHTML = [
+    ...d.menunggu_balasan.map((x) => `<li><span>${esc(x.nama)}</span><span class="sub">${unitTag(x.unit)} · belum dibalas ${x.jam} jam</span></li>`),
+    ...d.lead_dingin.map((x) => `<li><span>${esc(x.nama)}</span><span class="sub">${unitTag(x.unit)} · follow-up habis: telepon atau tandai kalah</span></li>`),
+  ].join('');
+  $('#auto').textContent = `Hari ini: ${d.terkirim_hari_ini} pesan terkirim, ${d.otomatis_hari_ini} disetujui autopilot, ${d.antre_kirim} antre kirim.`;
+  document.querySelectorAll('.item').forEach((b) => b.addEventListener('click', () => buka(b.dataset.k, b.dataset.id)));
+}
+
+async function buka(k, id) {
+  pilih = { k, id };
+  document.querySelectorAll('.item').forEach((b) => b.setAttribute('aria-current', b.dataset.id === id));
+  const el = $('#detail');
+  if (k === 'tugas') { el.innerHTML = '<p class="sub">Memuat…</p>'; el.innerHTML = await htmlTugas(id, true); pasangAksiTugas(el, id); return; }
+  if (k === 'konten') {
+    const c = data.konten.find((x) => x.id === id);
+    el.innerHTML = `<div class="meta">${unitTag(c.brand)}<span>${esc(c.channel)}</span><span class="num">${c.scheduled_at ? 'Jadwal ' + esc(jamID(c.scheduled_at)) : 'Jadwal belum diisi'}</span><span>${(c.media || []).length ? (c.media.length + ' gambar') : 'tanpa gambar'}</span></div>
+      <h3>${esc(c.topic || c.id)}</h3>
+      ${c.qa?.note ? `<p class="note">QA: ${esc(c.qa.note)}</p>` : ''}
+      <label class="field-l" for="isi">Teks</label>
+      <textarea id="isi" readonly>${esc(c.text)}${c.hashtags?.length ? '\n\n' + esc(c.hashtags.map((h) => '#' + h.replace(/^#/, '')).join(' ')) : ''}</textarea>
+      <p class="hint">Ubah teks lewat sesi Claude Code (penulis-konten) agar QA diulang otomatis. ${c.brief_visual ? 'Brief visual: ' + esc(c.brief_visual) : ''}</p>
+      <div class="actions">
+        <button class="btn primary" id="ok">Setujui dan jadwalkan</button>
+        <button class="btn" id="rev">Minta revisi</button>
+        <button class="btn" id="no">Tolak</button>
+      </div><div class="status" id="st" role="status"></div>`;
+    const go = (act, needNote) => async () => {
+      let note = '';
+      if (needNote) { note = prompt(act === 'revisi' ? 'Apa yang perlu direvisi?' : 'Alasan menolak?') || ''; if (!note) return; }
+      await aksiKirim(`/api/konten/${encodeURIComponent(id)}/${act}`, { note });
+    };
+    $('#ok').onclick = go('setujui'); $('#rev').onclick = go('revisi', true); $('#no').onclick = go('tolak', true);
+    return;
+  }
+  el.innerHTML = '<p class="sub">Memuat…</p>';
+  const { aksi: a, percakapan } = await api('/api/aksi/' + encodeURIComponent(id));
+  const bisaEdit = a.status === 'usulan';
+  el.innerHTML = `<div class="meta">${unitTag(a.unit)}<span>${esc(JENIS[a.jenis] || a.jenis)}</span><span class="risk ${esc(a.risiko)}">risiko ${esc(a.risiko)}</span>
+      <span>Ke: ${esc(a.tujuan?.nama || '-')} <span class="num">+${esc(a.tujuan?.wa || '')}</span></span>${a.template?.nama ? `<span>Template Meta: ${esc(a.template.nama)}</span>` : ''}</div>
+    <h3>${esc(a.ringkas)}</h3>
+    ${a.masalah?.length ? `<div class="issues"><strong>Diblokir pemeriksaan otomatis</strong><ul>${a.masalah.map((m) => `<li>${esc(m)}</li>`).join('')}</ul></div>` : ''}
+    ${a.eskalasi || a.alasan ? `<p class="note">${esc([a.eskalasi, a.alasan].filter(Boolean).join(' · '))}</p>` : ''}
+    ${a.status === 'gagal' ? `<div class="issues"><strong>Gagal kirim</strong><ul><li>${esc(a.riwayat.at(-1)?.note)}</li></ul></div>` : ''}
+    <label class="field-l" for="isi">Pesan yang akan dikirim</label>
+    <textarea id="isi" ${bisaEdit ? '' : 'readonly'}>${esc(a.isi)}</textarea>
+    <p class="hint">${a.template?.nama ? 'Di luar jendela 24 jam, WA mengirim template Meta yang sudah disetujui; teks di atas adalah pratinjaunya.' : 'Teks bebas hanya terkirim bila pelanggan menghubungi dalam 24 jam terakhir.'} Pemeriksaan harga dan klaim diulang saat Anda menyetujui.</p>
+    <div class="actions">
+      ${a.status === 'gagal' ? '<button class="btn primary" id="ulang">Coba kirim ulang</button>' : '<button class="btn primary" id="ok">Setujui</button>'}
+      <button class="btn" id="no">Tolak</button>
+      <label class="force" id="force"><input type="checkbox" id="paksa"> Saya sudah cek, setujui meski ada catatan</label>
+    </div><div class="status" id="st" role="status"></div>
+    ${percakapan.length ? `<div class="thread"><span class="field-l">Percakapan terakhir</span>${percakapan.map((p) => `<div class="msg ${p.arah === 'keluar' ? 'keluar' : 'masuk'}">${esc(p.teks)}<time class="num">${esc(jamID(p.waktu || p.at))}</time></div>`).join('')}</div>` : ''}`;
+  if (a.masalah?.length) $('#force').classList.add('show');
+  if ($('#ok')) $('#ok').onclick = () => aksiKirim(`/api/aksi/${encodeURIComponent(id)}/setujui`, { isi: $('#isi').value, paksa: $('#paksa').checked });
+  if ($('#ulang')) $('#ulang').onclick = () => aksiKirim(`/api/aksi/${encodeURIComponent(id)}/ulang`, {});
+  $('#no').onclick = () => { const note = prompt('Alasan menolak (dicatat di riwayat)?'); if (note !== null) aksiKirim(`/api/aksi/${encodeURIComponent(id)}/tolak`, { note }); };
+}
+
+async function aksiKirim(path, body) {
+  const st = $('#st');
+  document.querySelectorAll('.actions .btn').forEach((b) => (b.disabled = true));
+  st.className = 'status'; st.textContent = 'Menyimpan…';
+  try {
+    const r = await api(path, body);
+    pilih = null; await muat();
+    const msg = !r.hasil ? 'Tersimpan.' : /^TERKIRIM/.test(r.hasil) ? 'Disetujui dan terkirim.' : /^DRY-RUN/.test(r.hasil) ? 'Disetujui. Mode simulasi: belum terkirim sampai KARYAWAN_LIVE=1.' : /^GAGAL/.test(r.hasil) ? 'Disetujui, tapi gagal kirim: ' + r.hasil.replace(/^GAGAL [^:]+: /, '') : 'Tersimpan. ' + r.hasil;
+    $('#detail').innerHTML = `<div class="empty">${esc(msg)} Pilih item berikutnya.</div>`;
+  } catch (e) {
+    st.className = 'status err'; st.textContent = e.message;
+    if (/masalah/i.test(e.message)) $('#force')?.classList.add('show');
+    document.querySelectorAll('.actions .btn').forEach((b) => (b.disabled = false));
+  }
+}
+
+async function muat() {
+  try { data = await api('/api/ringkas'); $('#masuk').hidden = true; $('#app').hidden = false; render(); }
+  catch (e) {
+    if (!$('#masuk').hidden) return;
+    $('#mode').hidden = true;
+    $('#kep').innerHTML = `<li class="empty"><strong>Data belum bisa dimuat.</strong><br>${esc(e.message)}<br><br>Muat ulang halaman ini setelah diperbaiki.</li>`;
+  }
+}
+muat();
+setInterval(() => { if (!pilih && !$('#v-keputusan').hidden) muat(); }, 60000); // segarkan tiap menit selama tidak sedang membuka item
+</script>
+<script>
+// ================= Tim AI, Kantor 3D, Kepala Staf =================
+let tim = null, kantor = null, kantorMemuat = false, view = 'keputusan', pompa = 0;
+const STATUS_T = { rencana: 'Rencana', antre: 'Antre', revisi: 'Revisi', berjalan: 'Berjalan', review: 'Tinjau', selesai: 'Selesai', ditolak: 'Ditolak', gagal: 'Gagal', tertahan: 'Tertahan' };
+const STATUS_P = { merencanakan: 'menyusun rencana', menunggu_rencana: 'rencana menunggu persetujuan', berjalan: 'berjalan', selesai: 'selesai', dibatalkan: 'dibatalkan', gagal_rencana: 'rencana gagal' };
+const usd = (n) => '$' + (n || 0).toFixed(n >= 1 ? 2 : 4);
+const namaAgen = (id) => tim?.agen.find((a) => a.id === id)?.nama || id;
+
+function md(src) { // Markdown sederhana dan aman: teks di-escape dulu
+  const L = esc(src || '').split('\n'), out = []; let list = null, pre = false;
+  const inl = (t) => t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code>$1</code>');
+  const tutup = () => { if (list) { out.push(`</${list}>`); list = null; } };
+  for (const l of L) {
+    if (/^```/.test(l)) { tutup(); out.push(pre ? '</pre>' : '<pre>'); pre = !pre; continue; }
+    if (pre) { out.push(l + '\n'); continue; }
+    let m;
+    if ((m = l.match(/^#{1,2}\s+(.*)/))) { tutup(); out.push(`<h3>${inl(m[1])}</h3>`); }
+    else if ((m = l.match(/^#{3,6}\s+(.*)/))) { tutup(); out.push(`<h4>${inl(m[1])}</h4>`); }
+    else if ((m = l.match(/^\s*[-*]\s+(.*)/))) { if (list !== 'ul') { tutup(); out.push('<ul>'); list = 'ul'; } out.push(`<li>${inl(m[1])}</li>`); }
+    else if ((m = l.match(/^\s*\d+[.)]\s+(.*)/))) { if (list !== 'ol') { tutup(); out.push('<ol>'); list = 'ol'; } out.push(`<li>${inl(m[1])}</li>`); }
+    else if (/^\|/.test(l)) { tutup(); out.push(`<pre>${l}</pre>`); }
+    else if (!l.trim()) tutup();
+    else { tutup(); out.push(`<p>${inl(l)}</p>`); }
+  }
+  tutup(); if (pre) out.push('</pre>');
+  return out.join('');
+}
+
+// ---------- dialog ----------
+const dlg = $('#dlg');
+function bukaDialog(judul, html) { $('#dlg-t').textContent = judul; $('#dlg-b').innerHTML = html; if (!dlg.open) dlg.showModal(); return $('#dlg-b'); }
+$('#dlg-x').onclick = () => dlg.close();
+
+async function htmlTugas(id, diMeja = false) {
+  if (!tim) await muatTim();
+  let t = tim.tugas.find((x) => x.id === id);
+  if (!t) { await muatTim(); t = tim.tugas.find((x) => x.id === id); }
+  if (!t) return '<div class="empty">Tugas tidak ditemukan.</div>';
+  const p = t.proyek ? tim.proyek.find((x) => x.id === t.proyek) : null, h = t.hasil;
+  return `<div class="meta"><span>${esc(namaAgen(t.agen))}</span><span class="chip ${esc(t.status)}">${esc(STATUS_T[t.status] || t.status)}</span>${p ? `<span>Proyek: ${esc(p.judul)}</span>` : '<span>Tugas langsung</span>'}<span class="num">${usd(t.biaya_usd)}</span></div>
+    ${diMeja ? `<h3>${esc(t.judul)}</h3>` : ''}
+    <p class="note"><strong>Instruksi:</strong> ${esc(t.instruksi)}</p>
+    ${t.status === 'gagal' || t.status === 'tertahan' ? `<div class="issues"><strong>${t.status === 'gagal' ? 'Gagal' : 'Tertahan'}</strong><ul><li>${esc(t.riwayat?.at(-1)?.note)}</li></ul></div>` : ''}
+    ${h ? `${h.ringkasan ? `<p><strong>${esc(h.ringkasan)}</strong></p>` : ''}<div class="md">${md(h.md)}</div>
+      ${(h.butuh || []).length ? `<div class="note" style="margin-top:12px"><strong>Butuh dari Anda:</strong><ul>${h.butuh.map((b) => `<li>${esc(b)}</li>`).join('')}</ul></div>` : ''}
+      ${(h.pesan_wa || []).length ? `<p class="hint">${h.pesan_wa.length} usulan pesan WA dari tugas ini menunggu di daftar Butuh keputusan.</p>` : ''}` : (t.status === 'berjalan' ? '<p class="sub">Agent sedang mengerjakan…</p>' : '')}
+    ${(t.catatan_revisi || []).length ? `<p class="hint">Revisi diminta: ${t.catatan_revisi.map((c) => esc(c.note)).join(' · ')}</p>` : ''}
+    <div class="actions">
+      ${t.status === 'review' ? '<button class="btn primary" data-t="setujui">Setujui hasil</button><button class="btn" data-t="revisi">Minta revisi</button>' : ''}
+      ${['gagal', 'tertahan'].includes(t.status) ? '<button class="btn primary" data-t="ulang">Coba lagi</button>' : ''}
+      ${['review', 'rencana', 'antre', 'gagal', 'tertahan'].includes(t.status) ? '<button class="btn" data-t="tolak">Tolak</button>' : ''}
+    </div><div class="status" id="t-st" role="status"></div>`;
+}
+function pasangAksiTugas(el, id) {
+  el.querySelectorAll('[data-t]').forEach((b) => b.onclick = async () => {
+    const act = b.dataset.t; let note = '';
+    if (act === 'revisi') { note = prompt('Apa yang perlu direvisi agent?') || ''; if (!note.trim()) return; }
+    const st = el.querySelector('#t-st'); st.className = 'status'; st.textContent = 'Menyimpan…';
+    try {
+      await api(`/api/tugas/${encodeURIComponent(id)}/${act}`, { note });
+      st.className = 'status ok'; st.textContent = { setujui: 'Hasil disetujui.', revisi: 'Dikirim kembali ke agent untuk direvisi.', ulang: 'Diantrekan ulang.', tolak: 'Ditolak.' }[act];
+      await Promise.all([muatTim(), muat()]);
+      if (el.id === 'detail') { pilih = null; el.innerHTML = `<div class="empty">${esc(st.textContent)} Pilih item berikutnya.</div>`; }
+      else el.innerHTML = await htmlTugas(id), pasangAksiTugas(el, id);
+    } catch (e) { st.className = 'status err'; st.textContent = e.message; }
+  });
+}
+
+// ---------- data tim ----------
+async function muatTim() {
+  tim = await api('/api/tim');
+  const nrev = tim.tugas.filter((t) => t.status === 'review').length + tim.proyek.filter((p) => p.status === 'menunggu_rencana').length;
+  $('#b-tim').hidden = !nrev; $('#b-tim').textContent = nrev;
+  if (view === 'tim') renderTim();
+  if (kantor) kantor.perbarui(tim, data);
+  // pompa antrean: bila ada tugas antre tapi tidak ada yang berjalan, minta server mengerjakan satu
+  const antre = tim.tugas.some((t) => ['antre', 'revisi'].includes(t.status)), jalan = tim.tugas.some((t) => t.status === 'berjalan');
+  if (antre && !jalan && Date.now() - pompa > 8000 && ['tim', 'kantor'].includes(view)) { pompa = Date.now(); api('/api/tim/jalan', {}).then(muatTim).catch(() => {}); }
+  return tim;
+}
+setInterval(() => { if (['tim', 'kantor'].includes(view) && !document.hidden) muatTim().catch(() => {}); }, 6000);
+
+function renderTim() {
+  const T = tim.tugas;
+  $('#biaya').textContent = `Biaya AI hari ini ${usd(tim.biaya_hari_ini)}${tim.batas_harian_usd ? ` dari batas ${usd(tim.batas_harian_usd)}` : ''}. Rencana dan hasil kerja selalu menunggu persetujuan Anda.`;
+  $('#proyek').innerHTML = tim.proyek.length ? tim.proyek.map((p) => {
+    const pct = p.batas_usd ? Math.min(100, (p.terpakai_usd || 0) / p.batas_usd * 100) : 0, tp = T.filter((t) => t.proyek === p.id);
+    return `<div class="card"><h4>${esc(p.judul)}</h4><div class="meta2"><span class="chip ${esc(p.status)}">${esc(STATUS_P[p.status] || p.status)}</span><span>${tp.filter((t) => t.status === 'selesai').length}/${tp.length} tugas selesai</span></div>
+      ${p.rencana_ringkas ? `<p class="sub" style="margin:6px 0 0">${esc(p.rencana_ringkas)}</p>` : ''}
+      <div class="bar ${pct >= 100 ? 'over' : ''}"><i style="width:${pct}%"></i></div><div class="meta2 num">${usd(p.terpakai_usd)} dari ${usd(p.batas_usd)}</div>
+      ${p.status === 'menunggu_rencana' ? `<ol class="sub" style="padding-left:18px;margin:8px 0">${tp.sort((a, b) => a.urutan - b.urutan).map((t) => `<li><strong>${esc(namaAgen(t.agen))}</strong>: ${esc(t.judul)}</li>`).join('')}</ol>` : ''}
+      <div class="actions" style="margin-top:8px">
+        ${p.status === 'menunggu_rencana' ? `<button class="btn primary" data-p="setujui" data-id="${esc(p.id)}">Setujui rencana</button>` : ''}
+        ${['menunggu_rencana', 'berjalan'].includes(p.status) ? `<button class="btn" data-p="batal" data-id="${esc(p.id)}">Batalkan</button>` : ''}
+        ${p.status === 'berjalan' && pct >= 100 ? `<button class="btn" data-p="anggaran" data-id="${esc(p.id)}">Naikkan anggaran</button>` : ''}
+      </div></div>`;
+  }).join('') : '<div class="empty">Belum ada proyek. Tulis tujuan di atas; Kepala Staf memecahnya menjadi tugas untuk agent, lalu Anda menyetujui rencananya.</div>';
+  const kol = [['Rencana', ['rencana']], ['Antre', ['antre', 'revisi', 'gagal', 'tertahan']], ['Berjalan', ['berjalan']], ['Tinjau', ['review']], ['Selesai', ['selesai']]];
+  $('#board').innerHTML = kol.map(([j, st]) => { const c = T.filter((t) => st.includes(t.status)).slice(0, 30); return `<div><h3>${j}<span class="num">${c.length}</span></h3>${c.map((t) => `<div class="card" data-tugas="${esc(t.id)}" tabindex="0" role="button"><h4>${esc(t.judul)}</h4><div class="meta2"><span>${esc(namaAgen(t.agen))}</span>${['revisi', 'gagal', 'tertahan'].includes(t.status) ? `<span class="chip ${esc(t.status)}">${esc(STATUS_T[t.status])}</span>` : ''}<span class="num">${usd(t.biaya_usd)}</span></div></div>`).join('') || '<p class="sub">Kosong</p>'}</div>`; }).join('');
+  $('#n-agen').textContent = tim.agen.filter((a) => a.aktif).length;
+  $('#agen').innerHTML = tim.agen.map((a) => `<div class="card agen"><span class="dot" style="background:${esc(a.warna)}"></span><div><h4>${esc(a.nama)} <span class="sub" style="font-weight:400">· ${esc(a.peran)}</span></h4>
+    <div class="meta2"><span class="chip ${esc(a.status)}">${esc({ bekerja: 'bekerja', menunggu_review: 'menunggu tinjauan', antre: 'antre', bermasalah: 'bermasalah', santai: 'santai', nonaktif: 'nonaktif' }[a.status])}</span><span>${esc(a.model.replace('claude-', ''))}</span></div>
+    <div class="acts">${a.id !== 'kepala-staf' && a.aktif ? `<button class="btn" data-a="tugas" data-id="${esc(a.id)}">Beri tugas</button>` : ''}<button class="btn" data-a="progres" data-id="${esc(a.id)}">Progres</button><button class="btn" data-a="edit" data-id="${esc(a.id)}">Ubah</button></div></div></div>`).join('');
+}
+document.addEventListener('click', async (e) => {
+  const c = e.target.closest('[data-tugas]'); if (c) { const el = bukaDialog(c.querySelector('h4').textContent, '<p class="sub">Memuat…</p>'); el.innerHTML = await htmlTugas(c.dataset.tugas); pasangAksiTugas(el, c.dataset.tugas); return; }
+  const a = e.target.closest('[data-a]'); if (a) { const ag = tim.agen.find((x) => x.id === a.dataset.id); return { tugas: dlgBeriTugas, progres: dlgProgres, edit: dlgAgen }[a.dataset.a](ag); }
+  const p = e.target.closest('[data-p]'); if (p) {
+    const act = p.dataset.p; let body = {};
+    if (act === 'batal' && !confirm('Batalkan proyek ini? Tugas yang belum dikerjakan ikut dibatalkan.')) return;
+    if (act === 'anggaran') { const v = prompt('Anggaran baru proyek ini (USD):', '5'); if (!v) return; body = { batas_usd: +v }; }
+    p.disabled = true;
+    try { await api(`/api/proyek/${encodeURIComponent(p.dataset.id)}/${act}`, body); await muatTim(); } catch (err) { alert(err.message); p.disabled = false; }
+  }
+});
+
+function dlgBeriTugas(a) {
+  const el = bukaDialog(`Beri tugas ke ${a.nama}`, `<p class="sub">${esc(a.peran)}: ${esc(a.deskripsi)}</p>
+    <form class="form" id="f-tugas"><label for="t-judul">Judul</label><input id="t-judul" required placeholder="Singkat, mis. Rekap tenggat pajak Desember">
+    <label for="t-ins">Instruksi</label><textarea id="t-ins" required placeholder="Jelaskan apa yang dikerjakan dan bentuk hasil yang Anda mau. Data (CSV, tabel) boleh ditempel di sini."></textarea>
+    <button class="btn primary" type="submit" style="margin-top:14px">Kirim tugas</button><div class="status" id="ft-st" role="status"></div></form>`);
+  el.querySelector('#f-tugas').onsubmit = async (e) => {
+    e.preventDefault(); const st = el.querySelector('#ft-st'); st.className = 'status'; st.textContent = 'Mengirim…';
+    try { await api('/api/tugas', { agen: a.id, judul: el.querySelector('#t-judul').value, instruksi: el.querySelector('#t-ins').value }); st.className = 'status ok'; st.textContent = `Tugas diterima ${a.nama}. Hasilnya muncul di Meja Keputusan untuk Anda tinjau.`; await muatTim(); setTimeout(() => dlg.close(), 1400); }
+    catch (err) { st.className = 'status err'; st.textContent = err.message; }
+  };
+}
+async function dlgProgres(a) {
+  const el = bukaDialog(`Progres ${a.nama}`, '<p class="sub">Memuat…</p>');
+  const r = await api(`/api/agen/${encodeURIComponent(a.id)}/progres`);
+  el.innerHTML = `<p>${esc(r.teks)}</p>${r.tugas.length ? `<h4 style="margin:16px 0 8px">Tugas terakhir</h4>${r.tugas.map((t) => `<div class="card" data-tugas="${esc(t.id)}" role="button" tabindex="0"><h4>${esc(t.judul)}</h4><div class="meta2"><span class="chip ${esc(t.status)}">${esc(STATUS_T[t.status] || t.status)}</span><span class="num">${usd(t.biaya_usd)}</span></div></div>`).join('')}` : ''}`;
+}
+function dlgAgen(a) {
+  a = a || { nama: '', peran: '', unit: 'umum', model: 'claude-haiku-5-5', deskripsi: '', warna: '#4a4f5c', aktif: true, konteks: ['brand'] };
+  const KTX = { brand: 'Profil brand', harga: 'Harga resmi', leads: 'Lead aktif', kepatuhan: 'Kalender kepatuhan klien', jobs: 'Job servis 5P', armada: 'Jadwal servis unit', ringkas: 'Ringkasan kondisi' };
+  const el = bukaDialog(a.id ? `Ubah ${a.nama}` : 'Tambah agent', `<form class="form" id="f-agen">
+    <div class="row2"><div><label for="ag-nama">Nama</label><input id="ag-nama" required value="${esc(a.nama)}"></div><div><label for="ag-peran">Peran</label><input id="ag-peran" required value="${esc(a.peran)}"></div></div>
+    <label for="ag-desk">Kemampuan dan batasan</label><textarea id="ag-desk">${esc(a.deskripsi)}</textarea>
+    <div class="row2"><div><label for="ag-unit">Unit</label><select id="ag-unit">${[['umum', 'Keduanya'], ['adyaspace', 'Adya Space'], ['piramid-forklift', 'Piramid Forklift']].map(([v, l]) => `<option value="${v}" ${a.unit === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+    <div><label for="ag-model">Model</label><select id="ag-model">${(tim?.model || []).map((m) => `<option ${a.model === m ? 'selected' : ''}>${esc(m)}</option>`).join('')}</select></div></div>
+    <label>Data yang boleh dibaca</label><div class="meta2" style="gap:12px">${Object.entries(KTX).map(([k, l]) => `<label style="margin:0;font-weight:400"><input type="checkbox" name="ktx" value="${k}" ${(a.konteks || []).includes(k) ? 'checked' : ''} style="width:auto"> ${l}</label>`).join('')}</div>
+    <div class="row2"><label style="font-weight:400"><input type="checkbox" id="ag-wa" ${a.boleh_wa ? 'checked' : ''} style="width:auto"> Boleh mengusulkan pesan WA</label><label style="font-weight:400"><input type="checkbox" id="ag-aktif" ${a.aktif !== false ? 'checked' : ''} style="width:auto"> Aktif</label></div>
+    <label for="ag-warna">Warna baju di kantor 3D</label><input id="ag-warna" type="color" value="${esc(a.warna)}" style="width:80px;padding:2px">
+    <button class="btn primary" type="submit" style="margin-top:14px">Simpan</button><div class="status" id="ag-st" role="status"></div></form>`);
+  el.querySelector('#f-agen').onsubmit = async (e) => {
+    e.preventDefault(); const st = el.querySelector('#ag-st');
+    try {
+      await api('/api/agen', { id: a.id, nama: el.querySelector('#ag-nama').value, peran: el.querySelector('#ag-peran').value, deskripsi: el.querySelector('#ag-desk').value, unit: el.querySelector('#ag-unit').value,
+        model: el.querySelector('#ag-model').value, konteks: [...el.querySelectorAll('[name=ktx]:checked')].map((x) => x.value), boleh_wa: el.querySelector('#ag-wa').checked, aktif: el.querySelector('#ag-aktif').checked, warna: el.querySelector('#ag-warna').value });
+      await muatTim(); dlg.close();
+    } catch (err) { st.className = 'status err'; st.textContent = err.message; }
+  };
+}
+$('#tambah-agen').onclick = () => dlgAgen(null);
+
+$('#f-proyek').onsubmit = async (e) => {
+  e.preventDefault(); const st = $('#p-st'), b = e.target.querySelector('button'); b.disabled = true;
+  st.className = 'status'; st.textContent = 'Kepala Staf sedang menyusun rencana (10–30 detik)…';
+  try { await api('/api/proyek', { tujuan: $('#p-tujuan').value, judul: $('#p-judul').value, batas_usd: +$('#p-batas').value }); st.className = 'status ok'; st.textContent = 'Rencana siap. Periksa urutan tugas di bawah, lalu setujui.'; $('#p-tujuan').value = ''; $('#p-judul').value = ''; await muatTim(); }
+  catch (err) { st.className = 'status err'; st.textContent = err.message; }
+  b.disabled = false;
+};
+
+// ---------- kantor 3D ----------
+async function siapkanKantor() {
+  if (kantor || kantorMemuat) return; kantorMemuat = true;
+  try {
+    const { mulaiKantor } = await import('/app/kantor.js');
+    kantor = await mulaiKantor($('#kantor-3d'), { onProgress: (n, t) => { $('#k-load').textContent = `Memuat kantor… ${n}/${t}`; }, onAgen: menuAgen });
+    $('#k-load').hidden = true;
+    await muatTim();
+  } catch (e) { $('#k-load').innerHTML = `Kantor 3D tidak bisa dimuat di perangkat ini (${esc(e.message)}). Gunakan tab Tim &amp; Tugas.`; }
+  kantorMemuat = false;
+}
+function menuAgen(a, pos) {
+  const m = $('#k-menu');
+  if (!a) { m.hidden = true; return; }
+  const ada = tim?.tugas.find((t) => t.agen === a.id && t.status === 'review');
+  m.innerHTML = `<h4>${esc(a.nama)}</h4><p class="sub">${esc(a.peran)} · ${esc(a.label_status)}</p>
+    ${a.id !== 'kepala-staf' ? '<button class="btn" data-m="tugas">Beri tugas</button>' : '<button class="btn" data-m="chat">Bicara dengan Kepala Staf</button>'}
+    <button class="btn" data-m="progres">Tanya progres</button><button class="btn" data-m="hasil">Lihat hasil${ada ? ' (menunggu tinjauan)' : ''}</button>`;
+  const w = $('#v-kantor').clientWidth, h = $('#v-kantor').clientHeight;
+  m.style.left = Math.min(pos.x + 12, w - 250) + 'px'; m.style.top = Math.min(pos.y + 12, h - 190) + 'px'; m.hidden = false;
+  m.querySelectorAll('[data-m]').forEach((b) => b.onclick = async () => {
+    m.hidden = true; const ag = tim.agen.find((x) => x.id === a.id) || a;
+    if (b.dataset.m === 'tugas') dlgBeriTugas(ag);
+    if (b.dataset.m === 'progres') dlgProgres(ag);
+    if (b.dataset.m === 'chat') pindahView('chat');
+    if (b.dataset.m === 'hasil') {
+      const t = tim.tugas.filter((x) => x.agen === a.id && x.hasil).sort((x, y) => (y.selesai_dikerjakan || '').localeCompare(x.selesai_dikerjakan || ''))[0];
+      if (!t) return bukaDialog(`Hasil kerja ${ag.nama}`, `<div class="empty">${esc(ag.nama)} belum punya hasil kerja. Pilih "Beri tugas" untuk memberinya pekerjaan.</div>`);
+      const el = bukaDialog(`Hasil kerja ${ag.nama}: ${t.judul}`, '<p class="sub">Memuat…</p>'); el.innerHTML = await htmlTugas(t.id); pasangAksiTugas(el, t.id);
+    }
+  });
+}
+document.querySelectorAll('[data-cam]').forEach((b) => b.onclick = () => { kantor?.keKamera(b.dataset.cam); document.querySelectorAll('[data-cam]').forEach((x) => x.setAttribute('aria-pressed', x === b)); });
+$('#k-hemat').onclick = (e) => { const on = e.currentTarget.getAttribute('aria-pressed') !== 'true'; e.currentTarget.setAttribute('aria-pressed', on); kantor?.hemat(on); };
+
+// ---------- chat Kepala Staf ----------
+async function muatChat() { renderChat(await api('/api/chat')); }
+function renderChat(c) {
+  const log = $('#chat-log');
+  log.innerHTML = c.pesan.length ? c.pesan.map((m, i) => `<div class="msg ${m.dari === 'pemilik' ? 'keluar' : 'masuk'}">${m.dari === 'pemilik' ? esc(m.teks) : `<div class="md">${md(m.teks)}</div>`}
+    ${m.usul_proyek ? `<div class="card" style="margin-top:8px"><h4>Usulan proyek: ${esc(m.usul_proyek.judul)}</h4><p class="sub">${esc(m.usul_proyek.tujuan)}</p><button class="btn primary" data-usul="${i}">Susun rencananya</button></div>` : ''}
+    <time class="num">${esc(jamID(m.at))}</time></div>`).join('') : '<div class="empty">Tanya apa saja soal kondisi Adya Space dan Piramid, atau beri instruksi. Kepala Staf membaca data yang sama dengan Meja Keputusan.</div>';
+  log.scrollTop = log.scrollHeight;
+  log.querySelectorAll('[data-usul]').forEach((b) => b.onclick = async () => {
+    const u = c.pesan[+b.dataset.usul].usul_proyek; b.disabled = true; b.textContent = 'Menyusun rencana…';
+    try { await api('/api/proyek', { judul: u.judul, tujuan: u.tujuan }); pindahView('tim'); } catch (e) { b.disabled = false; b.textContent = 'Susun rencananya'; alert(e.message); }
+  });
+}
+async function kirimChat(teks) {
+  const st = $('#chat-st'); st.className = 'status'; st.textContent = 'Kepala Staf sedang menjawab…'; $('#f-chat button').disabled = true;
+  try { renderChat(await api('/api/chat', { pesan: teks })); st.textContent = ''; $('#chat-in').value = ''; }
+  catch (e) { st.className = 'status err'; st.textContent = e.message; }
+  $('#f-chat button').disabled = false;
+}
+$('#f-chat').onsubmit = (e) => { e.preventDefault(); kirimChat($('#chat-in').value); };
+$('#chat-in').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('#f-chat').requestSubmit(); } });
+$('#saran').querySelectorAll('button').forEach((b) => b.onclick = () => kirimChat(b.textContent));
+
+// ---------- tab ----------
+function pindahView(v) {
+  view = v;
+  document.querySelectorAll('.tabs [role=tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.v === v));
+  for (const id of ['keputusan', 'kantor', 'tim', 'chat']) $('#v-' + id).hidden = id !== v;
+  $('#k-menu').hidden = true;
+  if (v === 'kantor') { siapkanKantor(); kantor?.lanjut(); } else kantor?.jeda();
+  if (v === 'tim') muatTim().then(renderTim).catch((e) => { $('#board').innerHTML = `<div class="empty">${esc(e.message)}</div>`; });
+  if (v === 'chat') muatChat().catch((e) => { $('#chat-log').innerHTML = `<div class="empty">${esc(e.message)}</div>`; });
+  if (v === 'keputusan') muat();
+  try { history.replaceState(null, '', '#' + v); } catch {}
+}
+document.querySelectorAll('.tabs [role=tab]').forEach((b) => b.onclick = () => pindahView(b.dataset.v));
+if (['kantor', 'tim', 'chat'].includes(location.hash.slice(1))) setTimeout(() => pindahView(location.hash.slice(1)), 0);
+addEventListener('hashchange', () => { const v = location.hash.slice(1); if (v !== view && ['keputusan', 'kantor', 'tim', 'chat'].includes(v)) pindahView(v); });
+</script>
+</body>
+</html>

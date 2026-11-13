@@ -1,0 +1,16 @@
+data/
+content/
+logs/
+test/
+scripts/
+bin/
+deploy/
+.claude/
+_pindahkan-ke-.claude/
+README.md
+BLUEPRINT.md
+CLAUDE.md
+.env
+.env.*
+!.env.example
+data-contoh/
