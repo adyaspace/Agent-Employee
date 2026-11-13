@@ -177,10 +177,13 @@ const rg2 = (await api('/api/ringkas')).j;
 t('hasil kerja agent tampil di ringkasan Meja Keputusan', rg2.tugas_review.length >= 2 && rg2.tugas_review.some((x) => x.agen_nama === 'Laras'));
 t('revisi tanpa catatan ditolak', (await api(`/api/tugas/${t2.id}/revisi`, { note: '' })).s === 400);
 claudeAntre.push({ ringkasan: 'Sudah direvisi', hasil_md: 'Versi revisi.', butuh_dari_pemilik: [] });
-await api(`/api/tugas/${t2.id}/revisi`, { note: 'Tambahkan daftar periksa' });
+await api(`/api/tugas/${t2.id}/revisi`, { note: 'Tambahkan daftar periksa', ingat: true });
 t('revisi dikerjakan ulang dengan catatan pemilik', await tunggu(() => rd('tugas', t2.id).status === 'review' && rd('tugas', t2.id).hasil.md === 'Versi revisi.') && /Tambahkan daftar periksa/.test(calls.filter((c) => c.u === '/v1/messages').at(-1).b.messages[0].content));
+t('memori: catatan revisi bertanda ingat tersimpan dan dibaca agent', /Tambahkan daftar periksa/.test(rd('agen', 'qa').memori) && /CATATAN TETAP DARI PEMILIK[\s\S]*Tambahkan daftar periksa/.test(calls.filter((c) => c.u === '/v1/messages').at(-1).b.system[0].text), rd('agen', 'qa').memori);
 await api(`/api/tugas/${t1.id}/setujui`, {}); await api(`/api/tugas/${t2.id}/setujui`, {});
 t('semua tugas disetujui, proyek selesai', rd('proyek', pid).status === 'selesai');
+const kp = (await api('/api/ringkas')).j.kepercayaan || [];
+t('kepercayaan: aksi disetujui tanpa edit dan revisi agent terhitung', kp.some((x) => x.jenis && x.tanpa_edit >= 1) && kp.some((x) => x.agen === 'Galih' && x.diedit === 1 && x.persen === 0) && kp.some((x) => x.agen === 'Laras' && x.persen === 100), JSON.stringify(kp));
 claudeAntre.push({ ringkasan: 'r', tugas: [{ agen: 'analis', judul: 'Analisis', instruksi: 'x' }] });
 const pr2 = await api('/api/proyek', { tujuan: 'Analisis kecil', batas_usd: 0.001 });
 await api(`/api/proyek/${pr2.j.proyek.id}/setujui`, {});
@@ -192,6 +195,20 @@ const ch = await api('/api/chat', { pesan: 'Apa yang perlu saya kerjakan hari in
 t('chat Kepala Staf membalas dan bisa mengusulkan proyek', ch.s === 200 && ch.j.pesan.at(-1).dari === 'kepala-staf' && ch.j.pesan.at(-1).usul_proyek?.judul === 'Follow-up lead', JSON.stringify(ch.j).slice(0, 200));
 t('agen baru bisa ditambahkan', (await api('/api/agen', { nama: 'Uji Agen', peran: 'Uji', unit: 'umum', model: 'claude-haiku-5-5' })).j.id === 'agen-uji-agen');
 t('model tidak dikenal ditolak', (await api('/api/agen', { nama: 'X', peran: 'Y', model: 'gpt-x' })).s === 400);
+// rutinitas terjadwal
+const { bacaRutin, jalankanRutin } = await import('../lib/tim.mjs');
+const rb = bacaRutin("senin,kamis 7.05 | Rekap tenggat | Susun daftar\nsetiap hari 16:00 | Ringkas job | Daftar job terlambat\njum'at 08:00 | A | B");
+t('rutinitas: format hari jam | judul | instruksi terbaca', rb.length === 3 && rb[0].jam === '07:05' && rb[0].hari.join() === '1,4' && rb[1].hari.length === 7 && rb[2].hari[0] === 5, JSON.stringify(rb));
+const gagalBaca = (s) => { try { bacaRutin(s); return false; } catch { return true; } };
+t('rutinitas: hari salah, jam di luar cron, atau tanpa instruksi ditolak', gagalBaca('senen 07:00 | a | b') && gagalBaca('senin 23:00 | a | b') && gagalBaca('senin 07:00 | a'));
+t('rutinitas: tersimpan lewat dashboard', (await api('/api/agen', { id: 'kepatuhan', nama: 'Fajar', peran: 'Admin Kepatuhan', rutin_teks: 'jumat 07:00 | Rekap tenggat | Susun tenggat 7 hari' })).j.rutin?.[0]?.jam === '07:00');
+process.env.KARYAWAN_NOW = '2026-11-13T06:59:00+07:00'; // Jumat, sebelum jamnya
+t('rutinitas: belum waktunya, tidak membuat tugas', (await jalankanRutin()).length === 0);
+process.env.KARYAWAN_NOW = '2026-11-13T07:10:00+07:00';
+const rj = await jalankanRutin(), rj2 = await jalankanRutin();
+delete process.env.KARYAWAN_NOW;
+t('rutinitas: sudah waktunya membuat satu tugas antre, tidak dobel di hari yang sama', rj.length === 1 && rj2.length === 0 && semuaTugas().some((x) => x.rutin && x.agen === 'kepatuhan' && x.status === 'antre'), JSON.stringify([rj, rj2]));
+t('rutinitas: menyimpan ulang agent tidak mengulang rutinitas hari ini', (await api('/api/agen', { id: 'kepatuhan', nama: 'Fajar', peran: 'Admin Kepatuhan', rutin_teks: 'jumat 07:00 | Rekap tenggat | Susun tenggat 7 hari' })).j.rutin[0].terakhir === '2026-11-13');
 
 t('cron tanpa rahasia ditolak', (await fetch(base2 + '/api/cron')).status === 401);
 const cr = await fetch(base2 + '/api/cron', { headers: { authorization: 'Bearer cron-uji' } });

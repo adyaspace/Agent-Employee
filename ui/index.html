@@ -246,6 +246,11 @@
       <h2 id="h-due">Jatuh tempo 14 hari</h2>
       <ul class="rows" id="due"></ul>
     </section>
+    <section aria-labelledby="h-trust" id="sec-trust" hidden>
+      <h2 id="h-trust">Kepercayaan 30 hari</h2>
+      <ul class="rows" id="trust"></ul>
+      <p class="foot">Persen usulan yang Anda setujui tanpa edit. Autopilot layak dipertimbangkan bila minimal 70% dari 20 keputusan atau lebih.</p>
+    </section>
     <section aria-labelledby="h-pipe">
       <h2 id="h-pipe">Lead aktif</h2>
       <dl class="pipe num" id="pipe"></dl>
@@ -412,6 +417,10 @@ function render() {
     ...d.menunggu_balasan.map((x) => `<li><span>${esc(x.nama)}</span><span class="sub">${unitTag(x.unit)} · belum dibalas ${x.jam} jam</span></li>`),
     ...d.lead_dingin.map((x) => `<li><span>${esc(x.nama)}</span><span class="sub">${unitTag(x.unit)} · follow-up habis: telepon atau tandai kalah</span></li>`),
   ].join('');
+  const kp = d.kepercayaan || [];
+  $('#sec-trust').hidden = !kp.length;
+  $('#trust').innerHTML = kp.map((x) => `<li><span>${esc(x.agen ? 'Agent ' + x.agen : (JENIS[x.jenis] || x.jenis) + (x.intent ? ' · ' + x.intent.replace(/_/g, ' ') : ''))}</span>
+    <span class="sub num">${x.persen}% tanpa edit · ${x.n} keputusan${x.diedit ? ` · ${x.diedit} ${x.agen ? 'direvisi' : 'diedit'}` : ''}${x.ditolak ? ` · ${x.ditolak} ditolak` : ''}${!x.agen && x.n >= 20 && x.persen >= 70 ? ' · <strong>layak autopilot</strong>' : ''}</span></li>`).join('');
   $('#auto').textContent = `Hari ini: ${d.terkirim_hari_ini} pesan terkirim, ${d.otomatis_hari_ini} disetujui autopilot, ${d.antre_kirim} antre kirim.`;
   document.querySelectorAll('.item').forEach((b) => b.addEventListener('click', () => buka(b.dataset.k, b.dataset.id)));
 }
@@ -532,7 +541,7 @@ async function htmlTugas(id, diMeja = false) {
   if (!t) { await muatTim(); t = tim.tugas.find((x) => x.id === id); }
   if (!t) return '<div class="empty">Tugas tidak ditemukan.</div>';
   const p = t.proyek ? tim.proyek.find((x) => x.id === t.proyek) : null, h = t.hasil;
-  return `<div class="meta"><span>${esc(namaAgen(t.agen))}</span><span class="chip ${esc(t.status)}">${esc(STATUS_T[t.status] || t.status)}</span>${p ? `<span>Proyek: ${esc(p.judul)}</span>` : '<span>Tugas langsung</span>'}<span class="num">${usd(t.biaya_usd)}</span></div>
+  return `<div class="meta"><span>${esc(namaAgen(t.agen))}</span><span class="chip ${esc(t.status)}">${esc(STATUS_T[t.status] || t.status)}</span>${p ? `<span>Proyek: ${esc(p.judul)}</span>` : t.rutin ? '<span>Rutinitas terjadwal</span>' : '<span>Tugas langsung</span>'}<span class="num">${usd(t.biaya_usd)}</span></div>
     ${diMeja ? `<h3>${esc(t.judul)}</h3>` : ''}
     <p class="note"><strong>Instruksi:</strong> ${esc(t.instruksi)}</p>
     ${t.status === 'gagal' || t.status === 'tertahan' ? `<div class="issues"><strong>${t.status === 'gagal' ? 'Gagal' : 'Tertahan'}</strong><ul><li>${esc(t.riwayat?.at(-1)?.note)}</li></ul></div>` : ''}
@@ -548,11 +557,11 @@ async function htmlTugas(id, diMeja = false) {
 }
 function pasangAksiTugas(el, id) {
   el.querySelectorAll('[data-t]').forEach((b) => b.onclick = async () => {
-    const act = b.dataset.t; let note = '';
-    if (act === 'revisi') { note = prompt('Apa yang perlu direvisi agent?') || ''; if (!note.trim()) return; }
+    const act = b.dataset.t; let note = '', ingat = false;
+    if (act === 'revisi') { note = prompt('Apa yang perlu direvisi agent?') || ''; if (!note.trim()) return; ingat = confirm('Ingat catatan ini untuk tugas-tugas berikutnya agent ini?\n\nOK = simpan ke memori agent. Batal = hanya untuk tugas ini.'); }
     const st = el.querySelector('#t-st'); st.className = 'status'; st.textContent = 'Menyimpan…';
     try {
-      await api(`/api/tugas/${encodeURIComponent(id)}/${act}`, { note });
+      await api(`/api/tugas/${encodeURIComponent(id)}/${act}`, { note, ingat });
       st.className = 'status ok'; st.textContent = { setujui: 'Hasil disetujui.', revisi: 'Dikirim kembali ke agent untuk direvisi.', ulang: 'Diantrekan ulang.', tolak: 'Ditolak.' }[act];
       await Promise.all([muatTim(), muat()]);
       if (el.id === 'detail') { pilih = null; el.innerHTML = `<div class="empty">${esc(st.textContent)} Pilih item berikutnya.</div>`; }
@@ -631,6 +640,10 @@ function dlgAgen(a) {
   const el = bukaDialog(a.id ? `Ubah ${a.nama}` : 'Tambah agent', `<form class="form" id="f-agen">
     <div class="row2"><div><label for="ag-nama">Nama</label><input id="ag-nama" required value="${esc(a.nama)}"></div><div><label for="ag-peran">Peran</label><input id="ag-peran" required value="${esc(a.peran)}"></div></div>
     <label for="ag-desk">Kemampuan dan batasan</label><textarea id="ag-desk">${esc(a.deskripsi)}</textarea>
+    <label for="ag-memori">Memori (catatan tetap yang selalu dibaca agent)</label><textarea id="ag-memori" maxlength="3000" placeholder="Mis. Klien PT Maju selalu minta rekap dalam tabel. Jangan pakai istilah 'murah'.">${esc(a.memori || '')}</textarea>
+    <p class="hint">Catatan revisi yang Anda tandai "ingat" otomatis ditambahkan di sini.</p>
+    <label for="ag-rutin">Rutinitas terjadwal (satu per baris)</label><textarea id="ag-rutin" placeholder="senin 07:00 | Rekap tenggat minggu ini | Susun daftar tenggat pajak klien 7 hari ke depan, urut dari yang paling dekat&#10;setiap hari 16:00 | Ringkas job terlambat | Daftar job 5P yang lewat SLA dan siapa teknisinya">${esc((a.rutin || []).map((r) => r.baris).join('\n'))}</textarea>
+    <p class="hint">Format: hari jam | judul | instruksi. Hari: senin..minggu (pisahkan koma) atau "setiap hari". Jam 06:00–21:50 WIB. Hasilnya masuk Meja Keputusan untuk ditinjau.</p>
     <div class="row2"><div><label for="ag-unit">Unit</label><select id="ag-unit">${[['umum', 'Keduanya'], ['adyaspace', 'Adya Space'], ['piramid-forklift', 'Piramid Forklift']].map(([v, l]) => `<option value="${v}" ${a.unit === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
     <div><label for="ag-model">Model</label><select id="ag-model">${(tim?.model || []).map((m) => `<option ${a.model === m ? 'selected' : ''}>${esc(m)}</option>`).join('')}</select></div></div>
     <label>Data yang boleh dibaca</label><div class="meta2" style="gap:12px">${Object.entries(KTX).map(([k, l]) => `<label style="margin:0;font-weight:400"><input type="checkbox" name="ktx" value="${k}" ${(a.konteks || []).includes(k) ? 'checked' : ''} style="width:auto"> ${l}</label>`).join('')}</div>
@@ -640,7 +653,7 @@ function dlgAgen(a) {
   el.querySelector('#f-agen').onsubmit = async (e) => {
     e.preventDefault(); const st = el.querySelector('#ag-st');
     try {
-      await api('/api/agen', { id: a.id, nama: el.querySelector('#ag-nama').value, peran: el.querySelector('#ag-peran').value, deskripsi: el.querySelector('#ag-desk').value, unit: el.querySelector('#ag-unit').value,
+      await api('/api/agen', { id: a.id, nama: el.querySelector('#ag-nama').value, peran: el.querySelector('#ag-peran').value, deskripsi: el.querySelector('#ag-desk').value, memori: el.querySelector('#ag-memori').value, rutin_teks: el.querySelector('#ag-rutin').value, unit: el.querySelector('#ag-unit').value,
         model: el.querySelector('#ag-model').value, konteks: [...el.querySelectorAll('[name=ktx]:checked')].map((x) => x.value), boleh_wa: el.querySelector('#ag-wa').checked, aktif: el.querySelector('#ag-aktif').checked, warna: el.querySelector('#ag-warna').value });
       await muatTim(); dlg.close();
     } catch (err) { st.className = 'status err'; st.textContent = err.message; }

@@ -26,6 +26,11 @@ Dashboard punya empat tab:
 | Tim & Tugas | Proyek baru (Kepala Staf memecah tujuan menjadi tugas), papan tugas, roster agent (tambah, ubah model, data yang boleh dibaca) |
 | Kepala Staf | Chat untuk pertanyaan dan instruksi bebas; bisa mengusulkan proyek |
 
+Tiga fitur yang lazim di platform AI employee lain:
+- **Kepercayaan 30 hari** (sidebar Meja Keputusan): persen usulan yang disetujui tanpa edit, per jenis pesan/intent dan per agent. Jadi dasar menyalakan autopilot per jenis (minimal 70% dari 20 keputusan).
+- **Memori agent** (Tim & Tugas > Ubah): catatan tetap yang dibaca agent di setiap tugas. Saat meminta revisi, pilih OK di pertanyaan "Ingat catatan ini" agar catatannya masuk memori.
+- **Rutinitas terjadwal** (Tim & Tugas > Ubah): satu baris per rutinitas, `senin,kamis 07:00 | Judul | Instruksi` atau `setiap hari 16:00 | ...`. Cron membuat tugasnya sekali per hari pada jam itu (06:00-21:50 WIB); hasilnya tetap masuk Meja Keputusan.
+
 Alur: tujuan → rencana Kepala Staf → Anda setujui → agent bekerja berurutan → hasil ditinjau (setujui / minta revisi / tolak). Pesan WA yang diusulkan agent masuk Meja Keputusan, tidak pernah terkirim tanpa persetujuan.
 
 Biaya: tarif per model ada di `aturan/tim.json` (Sonnet 5.5 $2/$10, Haiku 5.5 $0,10/$0,50 per juta token, per Nov 2026). Setiap proyek punya anggaran; tugas berhenti (tertahan) saat anggaran atau batas harian `batas_harian_usd` tercapai.
