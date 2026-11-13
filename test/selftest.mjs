@@ -143,6 +143,7 @@ const ap = await (await fetch(`${base2}/api/aksi/${target.id}/setujui`, { method
 t('dashboard: setujui tercatat atas nama sesi dan langsung dicoba kirim (simulasi)', /^DRY-RUN/.test(ap.hasil) && rd('aksi', target.id).riwayat.at(-1).oleh === 'Budi', JSON.stringify(ap));
 t('dashboard: cookie palsu ditolak', (await fetch(base2 + '/api/ringkas', { headers: { cookie: 'ka_sesi=abc.def' } })).status === 401);
 t('dashboard: halaman UI tersaji', /Meja Keputusan/.test(await (await fetch(base2 + '/')).text()));
+t('dashboard: kantor.js tersaji', (await fetch(base2 + '/app/kantor.js')).headers.get('content-type')?.startsWith('text/javascript'));
 await kirimHook(pesan('111', '6281200000001', 'Rina', 'Kak, kalau PT perorangan berapa?', 'w9'));
 claudeAntre.push({ intent: 'tanya_harga', risiko: 'sedang', balasan: 'PT Perorangan mulai Rp500.000, Kak.', alasan: 'harga' });
 r = await run('bin/cs-draft.mjs', ['--lead', rina.id]);

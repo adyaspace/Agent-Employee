@@ -68,7 +68,7 @@ Yang berjalan online:
 |---|---|
 | `/` | Meja Keputusan (login nama + PIN, sesi 12 jam) |
 | `/webhook` | Callback URL WhatsApp Cloud API |
-| `/api/cron` | Harian 06.47 WIB: radar, draf CS yang tertunda, kirim yang disetujui, briefing |
+| `/api/cron` | Tiap 10 menit, 06.00-21.59 WIB (paket Pro): radar, draf CS yang tertunda, kirim yang disetujui, antrean tugas agent, briefing. Aman diulang: usulan berkunci unik, kirim tidak dobel |
 
 Menyetujui di dashboard langsung mengirim pesan bila `KARYAWAN_LIVE=1`; tanpa itu hanya simulasi. CLI di laptop (`node bin/ai.mjs ...`) memakai data online yang sama bila `.env` berisi `SUPABASE_URL` dan `SUPABASE_SERVICE_ROLE_KEY`.
 
@@ -98,6 +98,7 @@ Alternatif tanpa Vercel: VPS dengan `node bin/dashboard.mjs` di balik HTTPS + cr
 - Mode lokal tanpa Supabase menyimpan file JSON di `data/` (untuk uji). Online selalu Supabase.
 - Belum terhubung ke APPS Piramid, Coretax, atau OSS (lihat BLUEPRINT).
 - Agent Claude Code belum diuji di sesi sungguhan; yang teruji otomatis adalah skrip (`npm test`, 45 + 17 uji, termasuk backend Supabase tiruan).
-- Cron Vercel paket Hobby hanya sekali sehari; pesan yang disetujui di dashboard dikirim saat itu juga, jadi tidak bergantung pada cron.
+- Cron butuh paket Vercel Pro (Hobby hanya sekali sehari). Pesan yang disetujui di dashboard tetap dikirim saat itu juga.
+- Deploy hanya dari folder `karyawan-ai` (atau lewat push ke `main`). Deploy dari folder lain mengunggah file yang salah dan situs menjadi 404.
 - Antrean konten (`scripts/`, `content/`) tetap berjalan di laptop; dashboard online belum menampilkannya.
 - Kalender libur nasional belum terisi: lengkapi `aturan/libur.json`.
